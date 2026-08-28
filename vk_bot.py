@@ -25,19 +25,23 @@ def vk_request(method, params):
 def webhook():
     try:
         data = request.json
-        print("📨 ЗАПРОС ОТ ВК:", data)
+        print("=" * 50)
+        print("📨 ПОЛНЫЙ ЗАПРОС ОТ ВК:")
+        print(data)
+        print("=" * 50)
         
         if data.get("type") == "confirmation":
             return CONFIRMATION_CODE
         
-        # ===== ОБРАБОТКА КОММЕНТАРИЕВ =====
         if data.get("type") == "wall_reply_new":
+            print("✅ Найден комментарий!")
             text = data["object"].get("text", "").lower()
+            print(f"Текст комментария: '{text}'")
             if "тест" in text:
+                print("✅ Найдено слово 'тест'!")
                 user_id = data["object"]["from_id"]
                 post_id = data["object"]["post_id"]
                 
-                # Отвечаем в комментариях с просьбой подписаться
                 vk_request("wall.createComment", {
                     "group_id": GROUP_ID,
                     "post_id": post_id,
@@ -45,32 +49,32 @@ def webhook():
                     "message": "✅ Чтобы получить ссылку на тест, подпишись на наше сообщество и напиши слово «тест» в личные сообщения 🤍"
                 })
                 print("✅ Ответ в комментариях отправлен")
+            else:
+                print("❌ Слово 'тест' не найдено")
         
-        # ===== ОБРАБОТКА ЛИЧНЫХ СООБЩЕНИЙ =====
         if data.get("type") == "message_new":
+            print("✅ Найдено сообщение!")
             user_id = data["object"]["from_id"]
             text = data["object"].get("text", "").lower()
-            print(f"💬 Сообщение от {user_id}: {text}")
+            print(f"Текст сообщения: '{text}'")
             
             if "тест" in text:
-                # Проверяем подписку
+                print("✅ Найдено слово 'тест' в сообщении!")
                 check = vk_request("groups.isMember", {
                     "group_id": GROUP_ID,
                     "user_id": user_id
                 })
                 is_subscribed = check.get("response", 0) == 1
-                print(f"Подписка пользователя {user_id}: {is_subscribed}")
+                print(f"Подписка: {is_subscribed}")
                 
                 if is_subscribed:
-                    # Отправляем ссылку на тест
                     vk_request("messages.send", {
                         "user_id": user_id,
                         "message": f"🎉 Ссылка на тест: {TELEGRAM_BOT_LINK}",
                         "random_id": random.randint(1, 999999)
                     })
-                    print("✅ Ссылка отправлена подписчику")
+                    print("✅ Ссылка отправлена")
                 else:
-                    # Просим подписаться
                     keyboard = {
                         "one_time": True,
                         "buttons": [[{
@@ -84,15 +88,16 @@ def webhook():
                     }
                     vk_request("messages.send", {
                         "user_id": user_id,
-                        "message": f"🙁 Ты пока не подписан(а) на наше сообщество.\n\nПодпишись: https://vk.ru/club{GROUP_ID}\nИ нажми кнопку «Проверить подписку».",
+                        "message": f"🙁 Ты пока не подписан(а).\nПодпишись: https://vk.ru/club{GROUP_ID}\nИ нажми кнопку.",
                         "random_id": random.randint(1, 999999),
                         "keyboard": str(keyboard)
                     })
-                    print("✅ Сообщение с просьбой подписаться отправлено")
+                    print("✅ Просьба подписаться отправлена")
         
         return "ok", 200
     except Exception as e:
-        print(f"❌ ОШИБКА: {e}")
+        print("❌ ОШИБКА:")
+        print(e)
         traceback.print_exc()
         return "error", 500
 
