@@ -33,17 +33,16 @@ def webhook():
         # ===== ОБРАБОТКА КОММЕНТАРИЕВ =====
         if data.get("type") == "wall_reply_new":
             text = data["object"].get("text", "").lower()
-            # Проверяем, есть ли слово "тест" в любом регистре
             if "тест" in text:
                 user_id = data["object"]["from_id"]
                 post_id = data["object"]["post_id"]
                 
-                # Отвечаем в комментариях
+                # Отвечаем в комментариях с просьбой подписаться
                 vk_request("wall.createComment", {
                     "group_id": GROUP_ID,
                     "post_id": post_id,
                     "from_group": 1,
-                    "message": "✅ Спасибо! Чтобы получить ссылку на тест, напиши мне в личные сообщения слово «тест»."
+                    "message": "✅ Чтобы получить ссылку на тест, подпишись на наше сообщество и напиши слово «тест» в личные сообщения 🤍"
                 })
                 print("✅ Ответ в комментариях отправлен")
         
@@ -53,7 +52,6 @@ def webhook():
             text = data["object"].get("text", "").lower()
             print(f"💬 Сообщение от {user_id}: {text}")
             
-            # Проверяем, есть ли слово "тест" в сообщении
             if "тест" in text:
                 # Проверяем подписку
                 check = vk_request("groups.isMember", {
