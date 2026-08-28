@@ -3,10 +3,11 @@ import requests
 import random
 from flask import Flask, request, jsonify
 
-# ===== НАСТРОЙКИ (ЗАМЕНИТЕ НА СВОИ) =====
+# ===== НАСТРОЙКИ =====
 VK_TOKEN = "vk1.a.u4aTmwLlYk5hgPCFtah29K6shnccC1zmphd29rY3oIW0C3oIxmbfQzH7X-RUyYsviRrc2R1_idmxGIZh51VXriSQQgFXyP8ENzZAYYV82ovy7VRHT7KsrT3TUv1DxT-AxDzNTMtpFHlcBLnFx_gCjnvZ_KJoGqcXcZjSjrivBQCeEiylTHUHh1zPN7Zt0nXjN9SKFqr-ILum9aMPut8dOg"
 GROUP_ID = "240718452"
 TELEGRAM_BOT_LINK = "https://t.me/uznaisebya_tonker_bot"
+CONFIRMATION_CODE = "afe8a0fa"
 
 # ===== ОТВЕТЫ =====
 COMMENT_REPLY = "Спасибо за интерес! 😊 Я отправил(а) тебе ссылку на тест в личные сообщения — проверь директ. Чтобы получить доступ, нужно быть подписанным на наше сообщество 🤍"
@@ -21,8 +22,12 @@ def vk_request(method, params):
     url = f"https://api.vk.com/method/{method}"
     params["access_token"] = VK_TOKEN
     params["v"] = "5.131"
-    response = requests.get(url, params=params)
-    return response.json()
+    try:
+        response = requests.get(url, params=params)
+        return response.json()
+    except Exception as e:
+        print(f"Ошибка запроса к ВК: {e}")
+        return {}
 
 def check_subscription(user_id):
     result = vk_request("groups.isMember", {
@@ -109,18 +114,22 @@ def index():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    data = request.json
-    if data.get("type") == "confirmation":
-        return "YOUR_CONFIRMATION_CODE"
-    if data.get("type") == "wall_reply_new":
-        handle_comment(data["object"])
-    elif data.get("type") == "message_new":
-        handle_message(data["object"])
-    return "ok"
+    try:
+        data = request.json
+        print(f"Получен запрос: {data}")  # Логирование для отладки
+        
+        if data.get("type") == "confirmation":
+            return CONFIRMATION_CODE
+        
+        if data.get("type") == "wall_reply_new":
+            handle_comment(data["object"])
+        elif data.get("type") == "message_new":
+            handle_message(data["object"])
+        return "ok"
+    except Exception as e:
+        print(f"Ошибка в webhook: {e}")
+        return "error", 500
 
 if __name__ == "__main__":
-    if VK_TOKEN == "vk1.a.u4aTmwLlYk5hgPCFtah29K6shnccC1zmphd29rY3oIW0C3oIxmbfQzH7X-RUyYsviRrc2R1_idmxGIZh51VXriSQQgFXyP8ENzZAYYV82ovy7VRHT7KsrT3TUv1DxT-AxDzNTMtpFHlcBLnFx_gCjnvZ_KJoGqcXcZjSjrivBQCeEiylTHUHh1zPN7Zt0nXjN9SKFqr-ILum9aMPut8dOg":
-        print("⚠️ Вставьте токен ВКонтакте в переменную VK_TOKEN!")
-        exit()
     print("✅ Бот ВКонтакте запущен!")
     app.run(host="0.0.0.0", port=5000)
