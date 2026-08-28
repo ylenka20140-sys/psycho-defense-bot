@@ -1,5 +1,6 @@
 from flask import Flask, request
 import requests
+import random
 
 app = Flask(__name__)
 
@@ -10,9 +11,11 @@ CONFIRMATION_CODE = "dd5bba33"
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.json
-    print("ПРИШЛО:", data)
+    print("=" * 50)
+    print("📨 ПОЛНЫЙ ЗАПРОС ОТ ВК:")
+    print(data)
+    print("=" * 50)
 
-    # ЭТО САМОЕ ВАЖНОЕ — ПОДТВЕРЖДЕНИЕ СЕРВЕРА
     if data.get("type") == "confirmation":
         return CONFIRMATION_CODE
 
@@ -29,7 +32,9 @@ def webhook():
                 "access_token": VK_TOKEN,
                 "v": "5.199"
             })
-            print("Ответил в комментариях")
+            print("✅ Ответ в комментариях отправлен")
+        else:
+            print("⚠️ Слово 'тест' не найдено в комментарии")
 
     if data.get("type") == "message_new":
         user_id = data["object"]["from_id"]
@@ -49,16 +54,18 @@ def webhook():
                     "access_token": VK_TOKEN,
                     "v": "5.199"
                 })
-                print("Ссылка отправлена")
+                print("✅ Ссылка отправлена в личку")
             else:
                 requests.post("https://api.vk.com/method/messages.send", params={
                     "user_id": user_id,
-                    "message": "Подпишись: https://vk.ru/club240718452 и напиши «тест» снова.",
+                    "message": "🙁 Подпишись: https://vk.ru/club240718452 и напиши «тест» снова.",
                     "random_id": 123457,
                     "access_token": VK_TOKEN,
                     "v": "5.199"
                 })
-                print("Просьба подписаться отправлена")
+                print("✅ Просьба подписаться отправлена")
+        else:
+            print("⚠️ Слово 'тест' не найдено в сообщении")
 
     return "ok", 200
 
