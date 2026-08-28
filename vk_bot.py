@@ -11,10 +11,8 @@ TELEGRAM_BOT_LINK = "https://t.me/uznaisebya_tonker_bot"
 CONFIRMATION_CODE = "afe8a0fa"
 
 # ===== ОТВЕТЫ =====
-# Ответ в комментариях (теперь всегда отправляется)
 COMMENT_REPLY = "Спасибо за интерес! 😊 Чтобы получить ссылку на тест «Психологические защиты», пожалуйста, напиши мне в личные сообщения. Я проверю, подписан(а) ли ты на наше сообщество, и отправлю тебе ссылку! 🤍"
 
-# Ответ в личку (только если пользователь сам написал боту)
 MESSAGE_SUBSCRIBED = "Отлично! 🎉 Ты подписан(а) на наше сообщество!\n\nВот ссылка на тест «Психологические защиты»:\n👉 {}\n\nПроходи тест, а потом пришли мне скриншот результатов — я помогу с расшифровкой! 🤍".format(TELEGRAM_BOT_LINK)
 
 MESSAGE_NOT_SUBSCRIBED = "Я тебя пока не вижу среди подписчиков 🙁\n\nПодпишись на наше сообщество «Всё будет, просто нужно время»:\n👉 https://vk.ru/club{}\n\nИ нажми на кнопку «Подписка есть», чтобы я проверил(а) снова 👇".format(GROUP_ID)
@@ -26,7 +24,6 @@ def vk_request(method, params):
     params["access_token"] = VK_TOKEN
     params["v"] = "5.199"
     try:
-        print(f"Запрос к ВК: {method}")
         response = requests.get(url, params=params)
         return response.json()
     except Exception as e:
@@ -34,7 +31,6 @@ def vk_request(method, params):
         return {}
 
 def check_subscription(user_id):
-    print(f"Проверка подписки для пользователя {user_id}")
     result = vk_request("groups.isMember", {
         "group_id": GROUP_ID,
         "user_id": user_id
@@ -42,7 +38,6 @@ def check_subscription(user_id):
     return result.get("response", 0) == 1
 
 def send_message(user_id, message, keyboard=None):
-    print(f"Отправка сообщения пользователю {user_id}")
     params = {
         "user_id": user_id,
         "message": message,
@@ -53,7 +48,6 @@ def send_message(user_id, message, keyboard=None):
     return vk_request("messages.send", params)
 
 def reply_to_comment(post_id, user_id, message):
-    print(f"Ответ на комментарий в посте {post_id} пользователю {user_id}")
     params = {
         "group_id": GROUP_ID,
         "post_id": post_id,
@@ -81,7 +75,6 @@ def handle_comment(comment_data):
         
         print(f"✅ Найдено ключевое слово! Пользователь {user_id}")
         
-        # ✅ ВСЕГДА ОТВЕЧАЕМ В КОММЕНТАРИЯХ
         print("Отправка ответа в комментарии...")
         reply_to_comment(post_id, user_id, COMMENT_REPLY)
         print("✅ Ответ в комментариях отправлен")
@@ -99,9 +92,7 @@ def handle_message(message_data):
         user_id = message_data["from_id"]
         text = message_data.get("text", "").lower()
         print(f"Текст сообщения: '{text}'")
-        print(f"От пользователя: {user_id}")
         
-        # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         print(f"Пользователь подписан: {is_subscribed}")
         
@@ -144,8 +135,9 @@ def webhook():
     try:
         print("=" * 60)
         print("📨 ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ВК")
+        
         data = request.json
-        print(f"Полный запрос: {data}")
+        print(f"ПОЛНЫЙ ЗАПРОС: {data}")
         
         if not data:
             print("❌ Пустой запрос")
@@ -166,6 +158,7 @@ def webhook():
             handle_message(data["object"])
         else:
             print(f"⚠️ Неизвестный тип события: {event_type}")
+            print(f"Проверьте настройки Callback API в ВК")
         
         print("=" * 60)
         return "ok", 200
