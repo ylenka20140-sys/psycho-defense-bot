@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 # ---------- ТОКЕН (ваш) ----------
-TOKEN = "8986995881:AAG4q_wUuly2MCUMMkUuMBwK3lfum0GDNDw"
+TOKEN = "8986995881:AAGrkLtDJ4I3nNtzcTiOyfHbYpjmP8JHnwk"
 
 # ---------- Данные теста (полный список вопросов) ----------
 QUESTIONS = [
