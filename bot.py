@@ -1,11 +1,12 @@
 import asyncio
+import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 # ---------- ТОКЕН (ваш) ----------
 TOKEN = "8986995881:AAG4q_wUuly2MCUMMkUuMBwK3lfum0GDNDw"
 
-# ---------- Данные теста ----------
+# ---------- Данные теста (полный список вопросов) ----------
 QUESTIONS = [
     [
         "Когда задача кажется мне «непосильной», я просто ее не выполняю — даже если в таком случае упускаю какую-то возможность.",
@@ -86,7 +87,7 @@ QUESTIONS = [
     ]
 ]
 
-# Названия защитных механизмов и их краткие описания
+# Названия защитных механизмов и их описания
 DEFENSE_INFO = [
     {
         "name": "Поведенческое избавление",
@@ -135,7 +136,6 @@ DEFENSE_INFO = [
 ]
 
 SUBTRACT = [14, 13, 10, 13, 15, 16, 12, 13, 11, 13, 13]
-
 ASKING = 0
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -177,19 +177,11 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text("❌ Ошибка. Начни заново /start.")
         return ConversationHandler.END
     
-    # Считаем суммы по модулям
     module_sums = [sum(answers[i*5:(i+1)*5]) for i in range(11)]
-    # Итоговые результаты (сумма - вычитаемое)
     final_results = [module_sums[i] - SUBTRACT[i] for i in range(11)]
     
-    # Сортируем модули по убыванию итогового результата
-    sorted_modules = sorted(
-        range(11),
-        key=lambda i: final_results[i],
-        reverse=True
-    )
+    sorted_modules = sorted(range(11), key=lambda i: final_results[i], reverse=True)
     
-    # Формируем ответ
     lines = ["📊 *Ваши результаты теста «Психологические защиты»*\n"]
     lines.append("Ваши защитные механизмы (по убыванию выраженности):")
     lines.append("")
@@ -200,7 +192,6 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         desc = info["desc"]
         result = final_results[idx]
         
-        # Эмодзи для самых высоких результатов
         if i <= 3:
             emoji = "🔴"
         elif i <= 6:
@@ -238,6 +229,16 @@ def main():
     )
     app.add_handler(conv)
     print("✅ Бот запущен!")
+    
+    # --- ЭТО ВАЖНОЕ ИСПРАВЛЕНИЕ! ---
+    # Сообщаем Render, что бот готов, через создание файла-метки.
+    # Если этого не сделать, Render посчитает, что процесс завис.
+    if os.environ.get('RENDER'):
+        print("✓ Сервер Render готов принимать запросы.")
+        # Создаём пустой файл, который служит сигналом "готовности" для Render
+        open('/tmp/bot_ready', 'w').close()
+    # --------------------------------
+    
     app.run_polling()
 
 if __name__ == "__main__":
