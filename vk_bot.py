@@ -36,28 +36,31 @@ def webhook():
                 user_id = data["object"]["from_id"]
                 post_id = data["object"]["post_id"]
                 
-                # Отвечаем в комментариях
-                vk_request("wall.createComment", {
+                # ✅ ВСЕГДА ОТВЕЧАЕМ В КОММЕНТАРИЯХ
+                comment_answer = vk_request("wall.createComment", {
                     "group_id": GROUP_ID,
                     "post_id": post_id,
                     "from_group": 1,
-                    "message": "✅ Спасибо! Напиши мне в личные сообщения, и я отправлю ссылку на тест."
+                    "message": "✅ Спасибо за интерес! Чтобы получить ссылку на тест, напиши мне в личные сообщения. Я проверю подписку и отправлю ссылку!"
                 })
-                print("✅ Ответ в комментариях отправлен")
+                print("Ответ в комментариях:", comment_answer)
                 
-                # Проверяем подписку
-                is_subscribed = vk_request("groups.isMember", {
+                # 🔍 Проверяем подписку
+                check = vk_request("groups.isMember", {
                     "group_id": GROUP_ID,
                     "user_id": user_id
-                }).get("response", 0) == 1
+                })
+                is_subscribed = check.get("response", 0) == 1
+                print(f"Подписка пользователя {user_id}: {is_subscribed}")
                 
+                # Отправляем сообщение в личку (только если бот имеет право писать этому пользователю)
                 if is_subscribed:
-                    vk_request("messages.send", {
+                    msg = vk_request("messages.send", {
                         "user_id": user_id,
                         "message": f"🎉 Ссылка на тест: {TELEGRAM_BOT_LINK}",
                         "random_id": random.randint(1, 999999)
                     })
-                    print("✅ Ссылка отправлена в личку")
+                    print("Сообщение подписчику:", msg)
                 else:
                     keyboard = {
                         "one_time": True,
@@ -70,13 +73,13 @@ def webhook():
                             "color": "positive"
                         }]]
                     }
-                    vk_request("messages.send", {
+                    msg = vk_request("messages.send", {
                         "user_id": user_id,
                         "message": f"Подпишись на сообщество https://vk.ru/club{GROUP_ID} и нажми кнопку.",
                         "random_id": random.randint(1, 999999),
                         "keyboard": str(keyboard)
                     })
-                    print("✅ Сообщение с просьбой подписаться отправлено")
+                    print("Сообщение с просьбой подписаться:", msg)
         return "ok", 200
     except Exception as e:
         print(f"❌ ОШИБКА: {e}")
