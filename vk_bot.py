@@ -24,13 +24,17 @@ def vk_request(method, params):
     params["access_token"] = VK_TOKEN
     params["v"] = "5.199"
     try:
+        print(f"Запрос к ВК: {method} с параметрами {params}")
         response = requests.get(url, params=params)
+        print(f"Ответ ВК: {response.text[:200]}")
         return response.json()
     except Exception as e:
         print(f"Ошибка запроса к ВК: {e}")
+        traceback.print_exc()
         return {}
 
 def check_subscription(user_id):
+    print(f"Проверка подписки для пользователя {user_id}")
     result = vk_request("groups.isMember", {
         "group_id": GROUP_ID,
         "user_id": user_id
@@ -38,6 +42,7 @@ def check_subscription(user_id):
     return result.get("response", 0) == 1
 
 def send_message(user_id, message, keyboard=None):
+    print(f"Отправка сообщения пользователю {user_id}")
     params = {
         "user_id": user_id,
         "message": message,
@@ -48,6 +53,7 @@ def send_message(user_id, message, keyboard=None):
     return vk_request("messages.send", params)
 
 def reply_to_comment(post_id, user_id, message):
+    print(f"Ответ на комментарий в посте {post_id} пользователю {user_id}")
     params = {
         "group_id": GROUP_ID,
         "post_id": post_id,
@@ -60,25 +66,39 @@ def reply_to_comment(post_id, user_id, message):
 
 def handle_comment(comment_data):
     try:
-        text = comment_data.get("text", "").lower()
-        print(f"Обработка комментария: '{text}'")
+        print("=" * 50)
+        print("Начало обработки комментария")
+        print(f"Полученные данные: {comment_data}")
         
+        # Извлекаем текст комментария
+        text = comment_data.get("text", "").lower()
+        print(f"Текст комментария: '{text}'")
+        
+        # Проверяем наличие ключевого слова
         if "тест" not in text:
-            print("Ключевое слово 'тест' не найдено")
+            print("Ключевое слово 'тест' не найдено в комментарии")
             return
         
         user_id = comment_data["from_id"]
         post_id = comment_data["post_id"]
         
-        print(f"Пользователь {user_id} написал 'тест' в посте {post_id}")
+        print(f"✅ Найдено ключевое слово! Пользователь {user_id} в посте {post_id}")
         
-        reply_to_comment(post_id, user_id, COMMENT_REPLY)
-        print("Ответ в комментариях отправлен")
+        # Отвечаем в комментариях
+        print("Отправка ответа в комментарии...")
+        reply_result = reply_to_comment(post_id, user_id, COMMENT_REPLY)
+        print(f"Результат ответа в комментариях: {reply_result}")
         
-        if check_subscription(user_id):
+        # Проверяем подписку
+        is_subscribed = check_subscription(user_id)
+        print(f"Пользователь подписан: {is_subscribed}")
+        
+        if is_subscribed:
+            print("Отправка сообщения подписчику...")
             send_message(user_id, MESSAGE_SUBSCRIBED)
-            print("Сообщение подписчику отправлено")
+            print("✅ Сообщение подписчику отправлено")
         else:
+            print("Пользователь не подписан, отправка сообщения с предложением подписаться...")
             keyboard = {
                 "one_time": True,
                 "buttons": [
@@ -93,20 +113,28 @@ def handle_comment(comment_data):
                 ]
             }
             send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
-            print("Сообщение неподписанному пользователю отправлено")
+            print("✅ Сообщение неподписанному пользователю отправлено")
+        
+        print("Обработка комментария завершена успешно")
+        print("=" * 50)
     except Exception as e:
-        print(f"Ошибка в handle_comment: {e}")
+        print(f"❌ Ошибка в handle_comment: {e}")
         traceback.print_exc()
 
 def handle_message(message_data):
     try:
+        print("=" * 50)
+        print("Начало обработки сообщения")
         user_id = message_data["from_id"]
         text = message_data.get("text", "").lower()
-        print(f"Обработка сообщения от {user_id}: '{text}'")
+        print(f"Текст сообщения: '{text}'")
+        print(f"От пользователя: {user_id}")
         
         if "подписка есть" in text:
+            print("Найдена команда 'подписка есть'")
             if check_subscription(user_id):
                 send_message(user_id, MESSAGE_SUBSCRIBED)
+                print("✅ Сообщение подписчику отправлено")
             else:
                 keyboard = {
                     "one_time": True,
@@ -122,8 +150,13 @@ def handle_message(message_data):
                     ]
                 }
                 send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
+                print("✅ Сообщение неподписанному пользователю отправлено")
+        else:
+            print(f"Неизвестная команда в сообщении: {text}")
+        print("Обработка сообщения завершена")
+        print("=" * 50)
     except Exception as e:
-        print(f"Ошибка в handle_message: {e}")
+        print(f"❌ Ошибка в handle_message: {e}")
         traceback.print_exc()
 
 # ===== Flask-СЕРВЕР =====
@@ -132,36 +165,49 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "VK Bot is running!"
+    return "VK Bot is running! ✅"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
+        print("=" * 60)
+        print("📨 ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ВК")
         data = request.json
-        print("=" * 50)
-        print(f"Получен запрос: {data}")
-        print("=" * 50)
+        print(f"Полный запрос: {data}")
         
-        if data.get("type") == "confirmation":
+        if not data:
+            print("❌ Пустой запрос")
+            return "ok", 200
+        
+        event_type = data.get("type")
+        print(f"Тип события: {event_type}")
+        
+        if event_type == "confirmation":
+            print("✅ Подтверждение сервера")
             return CONFIRMATION_CODE
         
-        if data.get("type") == "wall_reply_new":
-            print("Найден комментарий!")
+        if event_type == "wall_reply_new":
+            print("✅ Найден новый комментарий!")
             handle_comment(data["object"])
-        elif data.get("type") == "message_new":
-            print("Найдено сообщение!")
+        elif event_type == "message_new":
+            print("✅ Найдено новое сообщение!")
             handle_message(data["object"])
         else:
-            print(f"Неизвестный тип события: {data.get('type')}")
-        return "ok"
+            print(f"⚠️ Неизвестный тип события: {event_type}")
+        
+        print("=" * 60)
+        return "ok", 200
     except Exception as e:
-        print("=" * 50)
-        print("ОШИБКА В WEBHOOK:")
+        print("=" * 60)
+        print("❌ ОШИБКА В WEBHOOK:")
         print(f"Текст ошибки: {e}")
         traceback.print_exc()
-        print("=" * 50)
+        print("=" * 60)
         return "error", 500
 
 if __name__ == "__main__":
     print("✅ Бот ВКонтакте запущен!")
+    print(f"✅ ID группы: {GROUP_ID}")
+    print(f"✅ Токен: {VK_TOKEN[:20]}...")
+    print(f"✅ Ссылка на бота: {TELEGRAM_BOT_LINK}")
     app.run(host="0.0.0.0", port=5000)
