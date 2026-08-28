@@ -1,6 +1,7 @@
 import time
 import requests
 import random
+import traceback
 from flask import Flask, request, jsonify
 
 # ===== НАСТРОЙКИ =====
@@ -21,7 +22,7 @@ MESSAGE_NOT_SUBSCRIBED = "Я тебя пока не вижу среди подп
 def vk_request(method, params):
     url = f"https://api.vk.com/method/{method}"
     params["access_token"] = VK_TOKEN
-    params["v"] = "5.199"  # Исправленная версия API
+    params["v"] = "5.199"
     try:
         response = requests.get(url, params=params)
         return response.json()
@@ -58,53 +59,25 @@ def reply_to_comment(post_id, user_id, message):
 # ===== ОБРАБОТКА СОБЫТИЙ =====
 
 def handle_comment(comment_data):
-    # Извлекаем текст комментария
-    text = comment_data.get("text", "").lower()
-    print(f"Обработка комментария: '{text}'")
-    
-    # Проверяем наличие ключевого слова
-    if "тест" not in text:
-        print("Ключевое слово 'тест' не найдено")
-        return
-    
-    user_id = comment_data["from_id"]
-    post_id = comment_data["post_id"]
-    
-    print(f"Пользователь {user_id} написал 'тест' в посте {post_id}")
-    
-    # Отвечаем в комментариях
-    reply_to_comment(post_id, user_id, COMMENT_REPLY)
-    print("Ответ в комментариях отправлен")
-    
-    # Проверяем подписку
-    if check_subscription(user_id):
-        send_message(user_id, MESSAGE_SUBSCRIBED)
-        print("Сообщение подписчику отправлено")
-    else:
-        keyboard = {
-            "one_time": True,
-            "buttons": [
-                [{
-                    "action": {
-                        "type": "callback",
-                        "label": "✅ Подписка есть",
-                        "payload": {"action": "check_subscription"}
-                    },
-                    "color": "positive"
-                }]
-            ]
-        }
-        send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
-        print("Сообщение неподписанному пользователю отправлено")
-
-def handle_message(message_data):
-    user_id = message_data["from_id"]
-    text = message_data.get("text", "").lower()
-    print(f"Обработка сообщения от {user_id}: '{text}'")
-    
-    if "подписка есть" in text:
+    try:
+        text = comment_data.get("text", "").lower()
+        print(f"Обработка комментария: '{text}'")
+        
+        if "тест" not in text:
+            print("Ключевое слово 'тест' не найдено")
+            return
+        
+        user_id = comment_data["from_id"]
+        post_id = comment_data["post_id"]
+        
+        print(f"Пользователь {user_id} написал 'тест' в посте {post_id}")
+        
+        reply_to_comment(post_id, user_id, COMMENT_REPLY)
+        print("Ответ в комментариях отправлен")
+        
         if check_subscription(user_id):
             send_message(user_id, MESSAGE_SUBSCRIBED)
+            print("Сообщение подписчику отправлено")
         else:
             keyboard = {
                 "one_time": True,
@@ -120,6 +93,38 @@ def handle_message(message_data):
                 ]
             }
             send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
+            print("Сообщение неподписанному пользователю отправлено")
+    except Exception as e:
+        print(f"Ошибка в handle_comment: {e}")
+        traceback.print_exc()
+
+def handle_message(message_data):
+    try:
+        user_id = message_data["from_id"]
+        text = message_data.get("text", "").lower()
+        print(f"Обработка сообщения от {user_id}: '{text}'")
+        
+        if "подписка есть" in text:
+            if check_subscription(user_id):
+                send_message(user_id, MESSAGE_SUBSCRIBED)
+            else:
+                keyboard = {
+                    "one_time": True,
+                    "buttons": [
+                        [{
+                            "action": {
+                                "type": "callback",
+                                "label": "✅ Подписка есть",
+                                "payload": {"action": "check_subscription"}
+                            },
+                            "color": "positive"
+                        }]
+                    ]
+                }
+                send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
+    except Exception as e:
+        print(f"Ошибка в handle_message: {e}")
+        traceback.print_exc()
 
 # ===== Flask-СЕРВЕР =====
 
@@ -134,7 +139,7 @@ def webhook():
     try:
         data = request.json
         print("=" * 50)
-        print(f"Получен полный запрос: {data}")
+        print(f"Получен запрос: {data}")
         print("=" * 50)
         
         if data.get("type") == "confirmation":
@@ -150,7 +155,11 @@ def webhook():
             print(f"Неизвестный тип события: {data.get('type')}")
         return "ok"
     except Exception as e:
-        print(f"Ошибка в webhook: {e}")
+        print("=" * 50)
+        print("ОШИБКА В WEBHOOK:")
+        print(f"Текст ошибки: {e}")
+        traceback.print_exc()
+        print("=" * 50)
         return "error", 500
 
 if __name__ == "__main__":
