@@ -11,9 +11,11 @@ TELEGRAM_BOT_LINK = "https://t.me/uznaisebya_tonker_bot"
 CONFIRMATION_CODE = "afe8a0fa"
 
 # ===== ОТВЕТЫ =====
-COMMENT_REPLY = "Спасибо за интерес! 😊 Я отправил(а) тебе ссылку на тест в личные сообщения — проверь директ. Чтобы получить доступ, нужно быть подписанным на наше сообщество 🤍"
+# Ответ в комментариях (теперь всегда отправляется)
+COMMENT_REPLY = "Спасибо за интерес! 😊 Чтобы получить ссылку на тест «Психологические защиты», пожалуйста, напиши мне в личные сообщения. Я проверю, подписан(а) ли ты на наше сообщество, и отправлю тебе ссылку! 🤍"
 
-MESSAGE_SUBSCRIBED = "Отлично! 🎉 Я вижу твою подписку!\n\nВот ссылка на тест «Психологические защиты»:\n👉 {}\n\nПроходи тест, а потом пришли мне скриншот результатов — я помогу с расшифровкой! 🤍".format(TELEGRAM_BOT_LINK)
+# Ответ в личку (только если пользователь сам написал боту)
+MESSAGE_SUBSCRIBED = "Отлично! 🎉 Ты подписан(а) на наше сообщество!\n\nВот ссылка на тест «Психологические защиты»:\n👉 {}\n\nПроходи тест, а потом пришли мне скриншот результатов — я помогу с расшифровкой! 🤍".format(TELEGRAM_BOT_LINK)
 
 MESSAGE_NOT_SUBSCRIBED = "Я тебя пока не вижу среди подписчиков 🙁\n\nПодпишись на наше сообщество «Всё будет, просто нужно время»:\n👉 https://vk.ru/club{}\n\nИ нажми на кнопку «Подписка есть», чтобы я проверил(а) снова 👇".format(GROUP_ID)
 
@@ -24,13 +26,11 @@ def vk_request(method, params):
     params["access_token"] = VK_TOKEN
     params["v"] = "5.199"
     try:
-        print(f"Запрос к ВК: {method} с параметрами {params}")
+        print(f"Запрос к ВК: {method}")
         response = requests.get(url, params=params)
-        print(f"Ответ ВК: {response.text[:200]}")
         return response.json()
     except Exception as e:
         print(f"Ошибка запроса к ВК: {e}")
-        traceback.print_exc()
         return {}
 
 def check_subscription(user_id):
@@ -68,37 +68,47 @@ def handle_comment(comment_data):
     try:
         print("=" * 50)
         print("Начало обработки комментария")
-        print(f"Полученные данные: {comment_data}")
         
-        # Извлекаем текст комментария
         text = comment_data.get("text", "").lower()
         print(f"Текст комментария: '{text}'")
         
-        # Проверяем наличие ключевого слова
         if "тест" not in text:
-            print("Ключевое слово 'тест' не найдено в комментарии")
+            print("Ключевое слово 'тест' не найдено")
             return
         
         user_id = comment_data["from_id"]
         post_id = comment_data["post_id"]
         
-        print(f"✅ Найдено ключевое слово! Пользователь {user_id} в посте {post_id}")
+        print(f"✅ Найдено ключевое слово! Пользователь {user_id}")
         
-        # Отвечаем в комментариях
+        # ✅ ВСЕГДА ОТВЕЧАЕМ В КОММЕНТАРИЯХ
         print("Отправка ответа в комментарии...")
-        reply_result = reply_to_comment(post_id, user_id, COMMENT_REPLY)
-        print(f"Результат ответа в комментариях: {reply_result}")
+        reply_to_comment(post_id, user_id, COMMENT_REPLY)
+        print("✅ Ответ в комментариях отправлен")
+        
+        print("Обработка комментария завершена")
+        print("=" * 50)
+    except Exception as e:
+        print(f"❌ Ошибка в handle_comment: {e}")
+        traceback.print_exc()
+
+def handle_message(message_data):
+    try:
+        print("=" * 50)
+        print("Начало обработки сообщения")
+        user_id = message_data["from_id"]
+        text = message_data.get("text", "").lower()
+        print(f"Текст сообщения: '{text}'")
+        print(f"От пользователя: {user_id}")
         
         # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         print(f"Пользователь подписан: {is_subscribed}")
         
         if is_subscribed:
-            print("Отправка сообщения подписчику...")
             send_message(user_id, MESSAGE_SUBSCRIBED)
             print("✅ Сообщение подписчику отправлено")
         else:
-            print("Пользователь не подписан, отправка сообщения с предложением подписаться...")
             keyboard = {
                 "one_time": True,
                 "buttons": [
@@ -115,44 +125,6 @@ def handle_comment(comment_data):
             send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
             print("✅ Сообщение неподписанному пользователю отправлено")
         
-        print("Обработка комментария завершена успешно")
-        print("=" * 50)
-    except Exception as e:
-        print(f"❌ Ошибка в handle_comment: {e}")
-        traceback.print_exc()
-
-def handle_message(message_data):
-    try:
-        print("=" * 50)
-        print("Начало обработки сообщения")
-        user_id = message_data["from_id"]
-        text = message_data.get("text", "").lower()
-        print(f"Текст сообщения: '{text}'")
-        print(f"От пользователя: {user_id}")
-        
-        if "подписка есть" in text:
-            print("Найдена команда 'подписка есть'")
-            if check_subscription(user_id):
-                send_message(user_id, MESSAGE_SUBSCRIBED)
-                print("✅ Сообщение подписчику отправлено")
-            else:
-                keyboard = {
-                    "one_time": True,
-                    "buttons": [
-                        [{
-                            "action": {
-                                "type": "callback",
-                                "label": "✅ Подписка есть",
-                                "payload": {"action": "check_subscription"}
-                            },
-                            "color": "positive"
-                        }]
-                    ]
-                }
-                send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
-                print("✅ Сообщение неподписанному пользователю отправлено")
-        else:
-            print(f"Неизвестная команда в сообщении: {text}")
         print("Обработка сообщения завершена")
         print("=" * 50)
     except Exception as e:
@@ -207,7 +179,4 @@ def webhook():
 
 if __name__ == "__main__":
     print("✅ Бот ВКонтакте запущен!")
-    print(f"✅ ID группы: {GROUP_ID}")
-    print(f"✅ Токен: {VK_TOKEN[:20]}...")
-    print(f"✅ Ссылка на бота: {TELEGRAM_BOT_LINK}")
     app.run(host="0.0.0.0", port=5000)
