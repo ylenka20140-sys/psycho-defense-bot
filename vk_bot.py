@@ -21,7 +21,7 @@ MESSAGE_NOT_SUBSCRIBED = "Я тебя пока не вижу среди подп
 def vk_request(method, params):
     url = f"https://api.vk.com/method/{method}"
     params["access_token"] = VK_TOKEN
-    params["v"] = "5.131"
+    params["v"] = "5.199"  # Исправленная версия API
     try:
         response = requests.get(url, params=params)
         return response.json()
