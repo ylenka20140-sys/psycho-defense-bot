@@ -58,14 +58,28 @@ def reply_to_comment(post_id, user_id, message):
 # ===== ОБРАБОТКА СОБЫТИЙ =====
 
 def handle_comment(comment_data):
+    # Извлекаем текст комментария
     text = comment_data.get("text", "").lower()
+    print(f"Обработка комментария: '{text}'")
+    
+    # Проверяем наличие ключевого слова
     if "тест" not in text:
+        print("Ключевое слово 'тест' не найдено")
         return
+    
     user_id = comment_data["from_id"]
     post_id = comment_data["post_id"]
+    
+    print(f"Пользователь {user_id} написал 'тест' в посте {post_id}")
+    
+    # Отвечаем в комментариях
     reply_to_comment(post_id, user_id, COMMENT_REPLY)
+    print("Ответ в комментариях отправлен")
+    
+    # Проверяем подписку
     if check_subscription(user_id):
         send_message(user_id, MESSAGE_SUBSCRIBED)
+        print("Сообщение подписчику отправлено")
     else:
         keyboard = {
             "one_time": True,
@@ -81,10 +95,13 @@ def handle_comment(comment_data):
             ]
         }
         send_message(user_id, MESSAGE_NOT_SUBSCRIBED, str(keyboard))
+        print("Сообщение неподписанному пользователю отправлено")
 
 def handle_message(message_data):
     user_id = message_data["from_id"]
     text = message_data.get("text", "").lower()
+    print(f"Обработка сообщения от {user_id}: '{text}'")
+    
     if "подписка есть" in text:
         if check_subscription(user_id):
             send_message(user_id, MESSAGE_SUBSCRIBED)
@@ -116,15 +133,21 @@ def index():
 def webhook():
     try:
         data = request.json
-        print(f"Получен запрос: {data}")  # Логирование для отладки
+        print("=" * 50)
+        print(f"Получен полный запрос: {data}")
+        print("=" * 50)
         
         if data.get("type") == "confirmation":
             return CONFIRMATION_CODE
         
         if data.get("type") == "wall_reply_new":
+            print("Найден комментарий!")
             handle_comment(data["object"])
         elif data.get("type") == "message_new":
+            print("Найдено сообщение!")
             handle_message(data["object"])
+        else:
+            print(f"Неизвестный тип события: {data.get('type')}")
         return "ok"
     except Exception as e:
         print(f"Ошибка в webhook: {e}")
