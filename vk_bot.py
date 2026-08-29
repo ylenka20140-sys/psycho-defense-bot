@@ -3,66 +3,51 @@ import requests
 
 app = Flask(__name__)
 
-VK_TOKEN = "vk1.a.O1auF69C9UOlPmdYFDk6n_Vr1yHhiVDSljJhFiAtNbAg5o-AtkL33zIT6wN_IK7yuzayK3lbTmPX_r6MgucZLp7zX9NB0bDNHJMX4J8x54l03pSzNdsSc7ETq-Pvk3kUdoftaGuxJuNwwSj_Rm_9nipRmJCNxEhilmQzoGh5PVUMTEGydcmHp3RwdiiKN8G_6TxUHcOJAxU5e1nzcOMj2g"
-GROUP_ID = "240718452"
-CONFIRMATION_CODE = "214912df"
+# ===== ВСТАВЬТЕ СВОИ ДАННЫЕ =====
+VK_TOKEN = "vk1.a.eEG1xkwki89TN16IwkYx4609iMe0KRryhMnFIYNRIb7ywwPPBiwWvCzNH-QIghtmP7EwVHemkla_uszpynhymfHLFdVdpmW4mdHbuaq2i-YvVNvhPotX35FNduMmxyed00deNmh9Xk4EFpL7RFsIrdJTU8O6EE_Pif_hbeadgux3ICwj-KVRP5TfR3kF09oGYTHF_R7SClBfiZK3VfIzmQ"
+CONFIRMATION_CODE = "d0aa297c"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    try:
-        data = request.json
-        print("📨 ПРИШЛО:", data)
+    data = request.json
+    print("📨 ПРИШЛО:", data)
 
-        if data.get("type") == "confirmation":
-            print("✅ Подтверждение")
-            return CONFIRMATION_CODE
+    if data.get("type") == "confirmation":
+        return CONFIRMATION_CODE
 
-        if data.get("type") == "message_new":
-            if "object" in data and "from_id" in data["object"]:
-                user_id = data["object"]["from_id"]
-                text = data["object"].get("text", "").lower()
-                print(f"Сообщение от {user_id}: '{text}'")
+    if data.get("type") == "message_new":
+        user_id = data["object"]["from_id"]
+        text = data["object"].get("text", "").lower()
 
-                if "тест" in text:
-                    check = requests.get("https://api.vk.com/method/groups.isMember", params={
-                        "group_id": GROUP_ID,
-                        "user_id": user_id,
-                        "access_token": VK_TOKEN,
-                        "v": "5.199"
-                    }).json()
-                    is_subscribed = check.get("response", 0) == 1
-                    print(f"Подписка: {is_subscribed}")
+        if "тест" in text:
+            # Проверяем подписку
+            check = requests.get("https://api.vk.com/method/groups.isMember", params={
+                "group_id": "240718452",
+                "user_id": user_id,
+                "access_token": VK_TOKEN,
+                "v": "5.199"
+            }).json()
 
-                    if is_subscribed:
-                        requests.post("https://api.vk.com/method/messages.send", params={
-                            "user_id": user_id,
-                            "message": "🎉 Ссылка на тест: https://t.me/uznaisebya_tonker_bot",
-                            "random_id": 123456,
-                            "access_token": VK_TOKEN,
-                            "v": "5.199"
-                        })
-                        print("✅ Ссылка отправлена")
-                    else:
-                        requests.post("https://api.vk.com/method/messages.send", params={
-                            "user_id": user_id,
-                            "message": "🌸 Привет! Как здорово, что ты хочешь узнать свои психологические защиты!\n\nЧтобы получить ссылку на тест, мне нужно, чтобы ты подписался(ась) на наше сообщество — это займёт всего пару секунд.\n\n👉 https://vk.ru/club240718452\n\nА потом просто вернись и напиши мне «тест» — ссылка сразу будет ждать тебя! 🤍",
-                            "random_id": 123457,
-                            "access_token": VK_TOKEN,
-                            "v": "5.199"
-                        })
-                        print("✅ Просьба подписаться отправлена")
-                else:
-                    print("⚠️ Слово 'тест' не найдено")
+            if check.get("response", 0) == 1:
+                # Отправляем ссылку
+                requests.post("https://api.vk.com/method/messages.send", params={
+                    "user_id": user_id,
+                    "message": "🎉 Ссылка на тест: https://t.me/uznaisebya_tonker_bot",
+                    "random_id": 123456,
+                    "access_token": VK_TOKEN,
+                    "v": "5.199"
+                })
             else:
-                print("⚠️ Запрос не от пользователя (нет from_id)")
+                # Просим подписаться
+                requests.post("https://api.vk.com/method/messages.send", params={
+                    "user_id": user_id,
+                    "message": "🌸 Подпишись: https://vk.ru/club240718452 и напиши «тест» снова.",
+                    "random_id": 123457,
+                    "access_token": VK_TOKEN,
+                    "v": "5.199"
+                })
 
-        return "ok", 200
-
-    except Exception as e:
-        print(f"❌ ОШИБКА: {e}")
-        import traceback
-        traceback.print_exc()
-        return "error", 500
+    return "ok", 200
 
 @app.route('/')
 def index():
