@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-VK_TOKEN = "vk1.a.O1auF69C9UOlPmdYFDk6n_Vr1yHhiVDSljJhFiAtNbAg5o-AtkL33zIT6wN_IK7yuzayK3lbTmPX_r6MgucZLp7zX9NB0bDNHJMX4J8x54l03pSzNdsSc7ETq-Pvk3kUdoftaGuxJuNwwSj_Rm_9nipRmJCNxEhilmQzoGh5PVUMTEGydcmHp3RwdiiKN8G_6TxUHcOJAxU5e1nzcOMj2gvk1.a.O1auF69C9UOlPmdYFDk6n_Vr1yHhiVDSljJhFiAtNbAg5o-AtkL33zIT6wN_IK7yuzayK3lbTmPX_r6MgucZLp7zX9NB0bDNHJMX4J8x54l03pSzNdsSc7ETq-Pvk3kUdoftaGuxJuNwwSj_Rm_9nipRmJCNxEhilmQzoGh5PVUMTEGydcmHp3RwdiiKN8G_6TxUHcOJAxU5e1nzcOMj2g"
+VK_TOKEN = "vk1.a.O1auF69C9UOlPmdYFDk6n_Vr1yHhiVDSljJhFiAtNbAg5o-AtkL33zIT6wN_IK7yuzayK3lbTmPX_r6MgucZLp7zX9NB0bDNHJMX4J8x54l03pSzNdsSc7ETq-Pvk3kUdoftaGuxJuNwwSj_Rm_9nipRmJCNxEhilmQzoGh5PVUMTEGydcmHp3RwdiiKN8G_6TxUHcOJAxU5e1nzcOMj2g"
 GROUP_ID = "240718452"
 CONFIRMATION_CODE = "214912df"
 
@@ -11,39 +11,20 @@ CONFIRMATION_CODE = "214912df"
 def webhook():
     try:
         data = request.json
-        print("=" * 50)
-        print("📨 ПОЛНЫЙ ЗАПРОС ОТ ВК:")
-        print(data)
-        print("=" * 50)
-        
+        print("📨 ПРИШЛО:", data)
+
         if data.get("type") == "confirmation":
-            print("✅ Подтверждение сервера")
+            print("✅ Подтверждение")
             return CONFIRMATION_CODE
-        
-        if data.get("type") == "wall_reply_new":
-            text = data["object"].get("text", "").lower()
-            print(f"Текст комментария: '{text}'")
-            if "тест" in text:
-                user_id = data["object"]["from_id"]
-                post_id = data["object"]["post_id"]
-                print(f"Пользователь {user_id}, пост {post_id}")
-                result = requests.post("https://api.vk.com/method/wall.createComment", params={
-                    "group_id": GROUP_ID,
-                    "post_id": post_id,
-                    "from_group": 1,
-                    "message": "✅ Чтобы получить ссылку на тест, подпишись и напиши «тест» в личку.",
-                    "access_token": VK_TOKEN,
-                    "v": "5.199"
-                })
-                print(f"Ответ ВК: {result.text}")
-            else:
-                print("⚠️ Слово 'тест' не найдено")
-        
+
+        # Только личные сообщения
         if data.get("type") == "message_new":
             user_id = data["object"]["from_id"]
             text = data["object"].get("text", "").lower()
-            print(f"Текст сообщения: '{text}'")
+            print(f"Сообщение от {user_id}: '{text}'")
+
             if "тест" in text:
+                # Проверяем подписку
                 check = requests.get("https://api.vk.com/method/groups.isMember", params={
                     "group_id": GROUP_ID,
                     "user_id": user_id,
@@ -52,7 +33,9 @@ def webhook():
                 }).json()
                 is_subscribed = check.get("response", 0) == 1
                 print(f"Подписка: {is_subscribed}")
+
                 if is_subscribed:
+                    # Отправляем ссылку
                     requests.post("https://api.vk.com/method/messages.send", params={
                         "user_id": user_id,
                         "message": "🎉 Ссылка на тест: https://t.me/uznaisebya_tonker_bot",
@@ -62,6 +45,7 @@ def webhook():
                     })
                     print("✅ Ссылка отправлена")
                 else:
+                    # Просим подписаться
                     requests.post("https://api.vk.com/method/messages.send", params={
                         "user_id": user_id,
                         "message": "🙁 Подпишись: https://vk.ru/club240718452 и напиши «тест» снова.",
@@ -71,9 +55,10 @@ def webhook():
                     })
                     print("✅ Просьба подписаться отправлена")
             else:
-                print("⚠️ Слово 'тест' не найдено в сообщении")
-        
+                print("⚠️ Слово 'тест' не найдено")
+
         return "ok", 200
+
     except Exception as e:
         print(f"❌ ОШИБКА: {e}")
         import traceback
