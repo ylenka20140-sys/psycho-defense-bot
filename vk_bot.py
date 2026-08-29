@@ -17,16 +17,13 @@ def webhook():
             print("✅ Подтверждение")
             return CONFIRMATION_CODE
 
-        # Проверяем, что это сообщение от пользователя
         if data.get("type") == "message_new":
-            # Проверяем, есть ли объект и from_id
             if "object" in data and "from_id" in data["object"]:
                 user_id = data["object"]["from_id"]
                 text = data["object"].get("text", "").lower()
                 print(f"Сообщение от {user_id}: '{text}'")
 
                 if "тест" in text:
-                    # Проверяем подписку
                     check = requests.get("https://api.vk.com/method/groups.isMember", params={
                         "group_id": GROUP_ID,
                         "user_id": user_id,
@@ -37,7 +34,6 @@ def webhook():
                     print(f"Подписка: {is_subscribed}")
 
                     if is_subscribed:
-                        # Отправляем ссылку
                         requests.post("https://api.vk.com/method/messages.send", params={
                             "user_id": user_id,
                             "message": "🎉 Ссылка на тест: https://t.me/uznaisebya_tonker_bot",
@@ -47,10 +43,9 @@ def webhook():
                         })
                         print("✅ Ссылка отправлена")
                     else:
-                        # Просим подписаться
                         requests.post("https://api.vk.com/method/messages.send", params={
                             "user_id": user_id,
-                            "message": "🙁 Подпишись: https://vk.ru/club240718452 и напиши «тест» снова.",
+                            "message": "🌸 Привет! Как здорово, что ты хочешь узнать свои психологические защиты!\n\nЧтобы получить ссылку на тест, мне нужно, чтобы ты подписался(ась) на наше сообщество — это займёт всего пару секунд.\n\n👉 https://vk.ru/club240718452\n\nА потом просто вернись и напиши мне «тест» — ссылка сразу будет ждать тебя! 🤍",
                             "random_id": 123457,
                             "access_token": VK_TOKEN,
                             "v": "5.199"
@@ -68,13 +63,6 @@ def webhook():
         import traceback
         traceback.print_exc()
         return "error", 500
-
-@app.route('/')
-def index():
-    return "VK Bot is running!"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
 
 @app.route('/')
 def index():
