@@ -1,14 +1,14 @@
+import os
 import asyncio
 import json
-import os
-from vkbottle import Bot, Message
+from vkbottle import Bot
+from vkbottle.types import Message
 from vkbottle.bot import BotLabeler
 from vkbottle.types import Keyboard, KeyboardButtonColor, Text
 
 # ==================== НАСТРОЙКИ ====================
-import os
 VK_TOKEN = os.getenv("vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g")
-ADMIN_ID = 240718452 # Ваш ID ВКонтакте
+ADMIN_ID = 240718452  # Ваш ID ВКонтакте
 STATS_FILE = "vk_stats.json"
 
 # ==================== ДАННЫЕ ТЕСТА ====================
@@ -86,19 +86,19 @@ user_answers = {}
 # ==================== КЛАВИАТУРЫ ====================
 
 def get_start_keyboard():
-    keyboard = Keyboard(inline=False)
-    keyboard.add(Text("Начать тест 🔥", payload={"start": True}))
+    keyboard = Keyboard(one_time=False, inline=False)
+    keyboard.add(Text("Начать тест 🔥"))
     return keyboard
 
 def get_answer_keyboard(question_index: int):
-    keyboard = Keyboard(inline=False)
+    keyboard = Keyboard(one_time=False, inline=False)
     for i, label in enumerate(["Совсем не про меня", "Иногда бывает", "Часто бывает", "Это точно про меня"], start=1):
-        keyboard.add(Text(f"{i}. {label}", payload={"q": question_index, "a": i}))
+        keyboard.add(Text(f"{i}. {label}"))
     return keyboard
 
 def get_restart_keyboard():
-    keyboard = Keyboard(inline=False)
-    keyboard.add(Text("Пройти заново 🔄", payload={"restart": True}))
+    keyboard = Keyboard(one_time=False, inline=False)
+    keyboard.add(Text("Пройти заново 🔄"))
     return keyboard
 
 # ==================== ФУНКЦИИ СТАТИСТИКИ ====================
@@ -127,13 +127,13 @@ bot = Bot(token=VK_TOKEN)
 labeler = BotLabeler()
 bot.labeler = labeler
 
-@labeler.message(payload={"start": True})
+@labeler.message(text="Начать тест 🔥")
 async def start_test(message: Message):
     user_id = message.peer_id
     user_answers[user_id] = []
     await send_question(message, user_id, 0)
 
-@labeler.message(payload={"restart": True})
+@labeler.message(text="Пройти заново 🔄")
 async def restart_test(message: Message):
     user_id = message.peer_id
     user_answers[user_id] = []
@@ -184,7 +184,7 @@ async def show_welcome(message: Message):
         f"{TEST_SUBTITLE}\n\n"
         f"Он поможет узнать ваш стиль эмоционального реагирования.\n\n"
         f"⚠️ Нет правильных ответов. Будьте честны.\n"
-        f"📝 Тест из 24 вопросов, займёт 5–7 минут.\n"
+        f"📝 Тест из {len(QUESTIONS)} вопросов, займёт 5–7 минут.\n"
         f"В конце — описание вашего типа."
     )
     await message.answer(text, keyboard=get_start_keyboard())
