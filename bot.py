@@ -33,6 +33,15 @@ longpoll = VkLongPoll(vk_session)
 # Хранилище состояний пользователей
 user_states = {}
 
+# ===== ТРИГГЕРЫ ДЛЯ ТЕСТОВ =====
+# Сейчас только один тест, но можно добавить больше
+TEST_TRIGGERS = {
+    "emotional": ["тест", "тест на эмоции", "эмоциональное реагирование"],
+    # Добавьте новые тесты здесь:
+    # "depression": ["депрессия", "тест на депрессию"],
+    # "anxiety": ["тревога", "тест на тревожность"],
+}
+
 # Определение вопросов
 QUESTIONS = [
     # Блок A: Реакция на злость и конфликт (вопросы 1-8)
@@ -129,7 +138,6 @@ SCALES = {
 def check_subscription(user_id):
     """Проверка подписки на группу"""
     try:
-        # Для админов всегда подписка
         if user_id in ADMIN_IDS:
             return True
         
@@ -146,14 +154,12 @@ def create_subscription_keyboard():
     """Клавиатура для подписки"""
     keyboard = VkKeyboard(one_time=False)
     
-    # Кнопка-ссылка на группу
     keyboard.add_openlink_button(
         label="📢 Подписаться на группу",
         link=f"https://vk.com/club{GROUP_ID}"
     )
     keyboard.add_line()
     
-    # Кнопка проверки подписки
     keyboard.add_button("✅ Проверить подписку", color=VkKeyboardColor.POSITIVE)
     
     return keyboard
@@ -196,6 +202,17 @@ def send_message(user_id, text, keyboard=None):
     except Exception as e:
         logger.error(f"Ошибка отправки сообщения: {e}")
 
+def find_test_by_trigger(text):
+    """Находит тест по триггеру"""
+    text = text.lower().strip()
+    
+    for test_id, triggers in TEST_TRIGGERS.items():
+        for trigger in triggers:
+            if text == trigger or text.startswith(trigger):
+                return test_id
+    
+    return None
+
 def process_message(event):
     """Обработка входящего сообщения"""
     try:
@@ -209,14 +226,13 @@ def process_message(event):
         
         # Если не подписан
         if not is_subscribed:
-            # Проверяем, не нажал ли кнопку проверки подписки
             if text == "✅ проверить подписку":
                 if check_subscription(user_id):
                     send_message(
                         user_id,
                         "✅ Отлично! Вы подписаны!\n\n"
                         "Теперь вы можете пройти тест.\n"
-                        "Нажмите кнопку ниже:",
+                        "Напишите «Тест» чтобы начать.",
                         create_start_keyboard()
                     )
                 else:
@@ -227,11 +243,9 @@ def process_message(event):
                         create_subscription_keyboard()
                     )
             else:
-                # Первое сообщение - просим подписаться
                 subscription_text = (
                     "👋 Здравствуйте!\n\n"
-                    "Для прохождения теста «Ваше эмоциональное реагирование»\n"
-                    "необходимо подписаться на нашу группу.\n\n"
+                    "Для прохождения теста необходимо подписаться на нашу группу.\n\n"
                     "1️⃣ Нажмите «Подписаться на группу»\n"
                     "2️⃣ Подпишитесь\n"
                     "3️⃣ Вернитесь и нажмите «Проверить подписку»"
@@ -241,9 +255,15 @@ def process_message(event):
             
             return
         
-        # Если подписан, обрабатываем команды
-        if text in ["начать", "старт", "start", "/start", "привет", "тест"]:
-            user_states[user_id] = {"state": "waiting_start"}
+        # Если подписан, проверяем триггеры тестов
+        test_id = find_test_by_trigger(text)
+        
+        if test_id:
+            # Запускаем тест
+            user_states[user_id] = {
+                "state": "waiting_start",
+                "test_id": test_id
+            }
             
             welcome_text = (
                 "👋 Здравствуйте!\n\n"
@@ -258,14 +278,11 @@ def process_message(event):
             send_message(user_id, welcome_text, create_start_keyboard())
         
         elif text == "🚀 начать тест":
-            # Инициализируем состояние теста
             user_states[user_id] = {
                 "state": "taking_test",
                 "current_question": 0,
                 "answers": []
             }
-            
-            # Показываем первый вопрос
             show_question(user_id)
         
         elif text == "🔄 пройти тест снова":
@@ -285,17 +302,17 @@ def process_message(event):
         elif text in ["/help", "помощь", "help"]:
             help_text = (
                 "🤖 Доступные команды:\n\n"
-                "• Начать / Привет / Тест - начать тест\n"
+                "• Тест - начать тест на эмоциональное реагирование\n"
                 "• Помощь - показать справку\n"
                 "• Статистика - статистика (для админов)"
             )
             send_message(user_id, help_text)
         
         else:
+            # Неизвестная команда
             send_message(
                 user_id,
-                "Используйте «Начать», «Привет» или «Тест» для начала теста.",
-                create_start_keyboard()
+                "Напишите «Тест» чтобы начать тест на эмоциональное реагирование."
             )
             
     except Exception as e:
@@ -304,7 +321,6 @@ def process_message(event):
 def show_question(user_id):
     """Показ вопроса"""
     try:
-        # Проверяем, есть ли пользователь в состояниях
         if user_id not in user_states:
             user_states[user_id] = {
                 "state": "taking_test",
@@ -334,7 +350,7 @@ def show_question(user_id):
             
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
-        send_message(user_id, "Произошла ошибка. Напишите «Начать» для перезапуска.")
+        send_message(user_id, "Произошла ошибка. Напишите «Тест» для перезапуска.")
 
 def process_answer(user_id, text):
     """Обработка ответа"""
@@ -353,7 +369,6 @@ def process_answer(user_id, text):
             send_message(user_id, "Выберите ответ от 1 до 4")
             return
         
-        # Проверяем, есть ли пользователь в состояниях
         if user_id not in user_states:
             user_states[user_id] = {
                 "state": "taking_test",
@@ -363,7 +378,6 @@ def process_answer(user_id, text):
         
         user_data = user_states[user_id]
         
-        # Проверяем, есть ли ключи
         if "answers" not in user_data:
             user_data["answers"] = []
         if "current_question" not in user_data:
@@ -376,7 +390,7 @@ def process_answer(user_id, text):
         
     except Exception as e:
         logger.error(f"Ошибка обработки ответа: {e}")
-        send_message(user_id, "Произошла ошибка. Напишите «Начать» для перезапуска.")
+        send_message(user_id, "Произошла ошибка. Напишите «Тест» для перезапуска.")
 
 def finish_test(user_id):
     """Завершение теста"""
@@ -388,6 +402,15 @@ def finish_test(user_id):
             results = calculate_results(answers)
             message = format_result_message(results)
             send_message(user_id, message)
+            
+            # Сохраняем статистику
+            user_info = vk.users.get(user_ids=user_id)
+            if user_info:
+                username = f"{user_info[0]['first_name']} {user_info[0]['last_name']}"
+            else:
+                username = f"Пользователь {user_id}"
+            
+            update_stats(user_id, username, results["dominant_type"], results["scores"])
             
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button("🔄 Пройти тест снова", color=VkKeyboardColor.POSITIVE)
@@ -483,7 +506,6 @@ def update_stats(user_id, username, dominant_type, scores):
         
         stats["scale_stats"][str(dominant_type)] += 1
         
-        # Добавляем пользователя
         if "users" not in stats:
             stats["users"] = []
         
@@ -556,11 +578,9 @@ async def handle_health(request):
 
 async def main():
     """Запуск HTTP сервера и бота"""
-    # Запускаем Long Poll в отдельном потоке
     longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
     longpoll_thread.start()
     
-    # HTTP сервер для Render
     app = web.Application()
     app.router.add_get('/', handle_health)
     app.router.add_get('/health', handle_health)
@@ -572,7 +592,6 @@ async def main():
     
     logger.info(f"HTTP сервер запущен на порту {PORT}")
     
-    # Держим сервер запущенным
     while True:
         await asyncio.sleep(3600)
 
