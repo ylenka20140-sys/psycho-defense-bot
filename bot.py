@@ -1,18 +1,21 @@
+import os
 import json
+import asyncio
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
-from vkbottle import Bot, Keyboard, KeyboardButtonColor, Text, Callback, GroupEventType, GroupTypes
-from vkbottle.bot import BotLabeler, Message, MessageEvent
+from aiohttp import web
+from vkbottle import Bot, Keyboard, KeyboardButtonColor, Text
+from vkbottle.bot import Message
 from vkbottle import BaseStateGroup
-from vkbottle.dispatch.rules.base import StateRule
 
-# Конфигурация
-VK_TOKEN = "vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g"  # Токен группы ВКонтакте
+# ===== НАСТРОЙКИ =====
+VK_TOKEN = "vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g"
 GROUP_ID = 240718452  # ID вашей группы
 ADMIN_IDS = [111655732]  # ID администраторов (можно несколько)
 VK_COMMUNITY_URL = "https://vk.com/club240718452"
 STATS_FILE = "stats.json"
+PORT = int(os.environ.get("PORT", 10000))
 
 # Настройка логирования
 logging.basicConfig(
@@ -23,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 # Инициализация бота
 bot = Bot(token=VK_TOKEN, group_id=GROUP_ID)
-labeler = BotLabeler()
 
 # Определение состояний
 class TestStates(BaseStateGroup):
@@ -285,8 +287,11 @@ def create_start_keyboard():
 @bot.on.private_message(text=["начать", "старт", "start", "/start", "привет"])
 async def start_handler(message: Message):
     """Обработчик команды старт"""
-    welcome_text = """
-👋 Здравствуйте!
+    users_info = await bot.api.users.get(message.from_id)
+    user_name = users_info[0].first_name if users_info else "друг"
+    
+    welcome_text = f"""
+👋 Здравствуйте, {user_name}!
 
 Это тест «Ваше эмоциональное реагирование»
 Тест на определение индивидуального стиля совладания с эмоциями
@@ -309,15 +314,12 @@ async def start_handler(message: Message):
 @bot.on.private_message(text="🚀 Начать тест")
 async def start_test_handler(message: Message):
     """Начало теста"""
-    await bot.state_dispenser.set(message.from_id, TestStates.TAKING_TEST)
-    
-    # Сохраняем начальное состояние
-    ctx = {
-        "current_question": 0,
-        "answers": []
-    }
-    await bot.state_dispenser.set(message.from_id, TestStates.TAKING_TEST, **ctx)
-    
+    await bot.state_dispenser.set(
+        message.from_id, 
+        TestStates.TAKING_TEST,
+        current_question=0,
+        answers=[]
+    )
     await show_question(message)
 
 # Функция для показа вопроса
@@ -504,7 +506,28 @@ async def handle_unknown(message: Message):
         keyboard=create_start_keyboard()
     )
 
-# Запуск бота
-if __name__ == "__main__":
+# ===== HTTP СЕРВЕР ДЛЯ RENDER =====
+async def handle_health(request):
+    """Обработчик для проверки работоспособности"""
+    return web.Response(text="Bot is running")
+
+async def main():
+    """Запуск HTTP сервера и бота"""
+    # Создаем HTTP сервер
+    app = web.Application()
+    app.router.add_get('/', handle_health)
+    app.router.add_get('/health', handle_health)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    
+    logger.info(f"HTTP сервер запущен на порту {PORT}")
     logger.info("VK бот запущен")
-    bot.run_forever()
+    
+    # Запускаем бота
+    await bot.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
