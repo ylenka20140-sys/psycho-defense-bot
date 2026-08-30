@@ -11,7 +11,7 @@ import asyncio
 import threading
 
 # ===== НАСТРОЙКИ =====
-VK_TOKEN = os.environ.get("VK_TOKEN", "vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g")  # Токен из Render
+VK_TOKEN = os.environ.get("VK_TOKEN", "vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g")
 GROUP_ID = int(os.environ.get("GROUP_ID", "240718452"))
 ADMIN_IDS = [int(x) for x in os.environ.get("ADMIN_IDS", "111655732").split(",")]
 VK_COMMUNITY_URL = os.environ.get("VK_COMMUNITY_URL", "https://vk.com/club240718452")
@@ -33,98 +33,35 @@ longpoll = VkLongPoll(vk_session)
 # Хранилище состояний пользователей
 user_states = {}
 
-# Определение вопросов
+# Определение вопросов (оставьте без изменений)
 QUESTIONS = [
-    # Блок A: Реакция на злость и конфликт (вопросы 1-8)
-    {"id": 1, "block": "A", "text": "Когда я злюсь, я говорю «всё нормально», хотя внутри всё кипит", "scales": [1]},
-    {"id": 2, "block": "A", "text": "Я скорее промолчу, чем вступлю в конфликт, даже если меня обидели", "scales": [1]},
-    {"id": 3, "block": "A", "text": "Если на меня накричали, я потом срываюсь на том, кто слабее (ребёнок, животное, подчинённый)", "scales": [2]},
-    {"id": 4, "block": "A", "text": "Я могу кричать, бить посуду или хлопать дверью, когда меня довели", "scales": [2]},
-    {"id": 5, "block": "A", "text": "Я долго ношу обиду в себе и прокручиваю в голове, что надо было ответить", "scales": [3]},
-    {"id": 6, "block": "A", "text": "После ссоры я не могу уснуть, потому что мысленно продолжаю спор", "scales": [3]},
-    {"id": 7, "block": "A", "text": "Я убеждён, что злиться — это плохо и стыдно", "scales": [1]},
-    {"id": 8, "block": "A", "text": "Я стараюсь вообще не попадать в ситуации, где возможен конфликт", "scales": [4]},
-    
-    # Блок B: Реакция на тревогу и страх (вопросы 9-16)
-    {"id": 9, "block": "B", "text": "Когда я тревожусь, я начинаю есть, даже если не голоден", "scales": [5]},
-    {"id": 10, "block": "B", "text": "От тревоги у меня пропадает аппетит", "scales": [5]},
-    {"id": 11, "block": "B", "text": "Чтобы успокоиться, мне нужно выпить, покурить или принять что-то", "scales": [5]},
-    {"id": 12, "block": "B", "text": "Я загружаю себя делами, чтобы не чувствовать тревогу", "scales": [6]},
-    {"id": 13, "block": "B", "text": "Я часами сижу в телефоне/сериалах/играх, чтобы убежать от неприятных мыслей", "scales": [4]},
-    {"id": 14, "block": "B", "text": "Я фантазирую о другой жизни, где у меня всё хорошо", "scales": [4]},
-    {"id": 15, "block": "B", "text": "Я постоянно проверяю и перепроверяю всё, чтобы не случилось ничего плохого", "scales": [6]},
-    {"id": 16, "block": "B", "text": "Мне нужно, чтобы всё было предсказуемо, иначе я не могу расслабиться", "scales": [6]},
-    
-    # Блок C: Реакция на грусть, вину и неудачи (вопросы 17-24)
-    {"id": 17, "block": "C", "text": "Когда что-то идёт не так, я виню в этом только себя", "scales": [7]},
-    {"id": 18, "block": "C", "text": "Я называю себя глупым/никчёмным, когда ошибаюсь", "scales": [7]},
-    {"id": 19, "block": "C", "text": "Я говорю себе «да ерунда, не стоит расстраиваться», чтобы не плакать", "scales": [1]},
-    {"id": 20, "block": "C", "text": "Я обесцениваю свои проблемы: «кому-то хуже, чем мне»", "scales": [1]},
-    {"id": 21, "block": "C", "text": "Я ухожу в работу с головой, чтобы не чувствовать боль/грусть", "scales": [6]},
-    {"id": 22, "block": "C", "text": "Я могу сутками лежать и ничего не делать, когда мне плохо", "scales": [4]},
-    {"id": 23, "block": "C", "text": "Я заедаю грусть или наоборот — не могу есть совсем", "scales": [5]},
-    {"id": 24, "block": "C", "text": "Мне сложно просить помощи, я должен справляться сам", "scales": [6]},
+    # ... все 24 вопроса ...
 ]
 
-# Описание шкал (оставьте как было)
+# Описание шкал (оставьте без изменений)
 SCALES = {
-    1: {
-        "name": "Подавитель",
-        "term": "Вытеснение (репрессия)",
-        "description": "«Я не чувствую» / «Я справлюсь сам». Эмоции замораживаются, человек выглядит спокойным, но внутри — вулкан.",
-        "price": "Психосоматика (головные боли, давление, панические атаки «на ровном месте»), эмоциональная глухота к близким.",
-        "motto": "«Если я не признаю чувство — его нет».",
-        "advice": "Учиться замечать телесные сигналы (зажимы, дыхание) и называть эмоции словами. Начните с фразы: «Мне сейчас неприятно, и это нормально»."
-    },
-    2: {
-        "name": "Взрыватель",
-        "term": "Отреагирование / Замещение",
-        "description": "Эмоция не удерживается внутри, а мгновенно выплёскивается на того, кто под рукой.",
-        "price": "Разрушенные отношения, чувство вины после вспышек, репутация «истерика» или «агрессора».",
-        "motto": "«Лучше выпустить пар, чем лопнуть».",
-        "advice": "Отслеживать первые признаки нарастающего гнева (сжатые кулаки, жар, учащённое дыхание) и делать паузу. Задайте себе вопрос: «На кого я на самом деле злюсь?»"
-    },
-    3: {
-        "name": "Мыслитель",
-        "term": "Руминация / Интеллектуализация",
-        "description": "Вместо того чтобы чувствовать, человек начинает бесконечно анализировать.",
-        "price": "Истощение мозга, бессонница, жизнь «в голове», потеря контакта с телом и реальностью.",
-        "motto": "«Если я всё пойму, мне станет легче».",
-        "advice": "Переключаться с мыслей на тело. Спросить себя: «Где я это чувствую физически?»"
-    },
-    4: {
-        "name": "Убегающий",
-        "term": "Избегание / Эскапизм",
-        "description": "Любой способ уйти от реальности: сериалы, игры, сон, фантазии, соцсети.",
-        "price": "Проблемы копятся, жизнь проходит мимо.",
-        "motto": "«Если я не вижу проблему — её не существует».",
-        "advice": "Начать с малого: 10 минут в день оставаться наедине с собой."
-    },
-    5: {
-        "name": "Заглушающий",
-        "term": "Химический / Пищевой копинг",
-        "description": "Тело используется как контейнер для эмоций.",
-        "price": "Зависимость, разрушение здоровья, стыд.",
-        "motto": "«Если я изменю химию тела, я перестану чувствовать».",
-        "advice": "Вести дневник: записывать, какая эмоция предшествовала импульсу."
-    },
-    6: {
-        "name": "Контролёр",
-        "term": "Гиперконтроль / Перфекционизм",
-        "description": "Попытка устранить тревогу через тотальный контроль.",
-        "price": "Истощение, выгорание, одиночество.",
-        "motto": "«Если я всё контролирую, со мной не случится ничего плохого».",
-        "advice": "Тренироваться отпускать: начать с мелочей."
-    },
-    7: {
-        "name": "Самонаказывающий",
-        "term": "Аутоагрессия",
-        "description": "Вся агрессия направляется на себя.",
-        "price": "Депрессия, низкая самооценка.",
-        "motto": "«Лучше я сам себя накажу».",
-        "advice": "Говорить с собой так, как с другом."
-    }
+    # ... все 7 шкал ...
 }
+
+def check_subscription(user_id):
+    """Проверка подписки на группу"""
+    try:
+        response = vk.groups.isMember(
+            group_id=GROUP_ID,
+            user_id=user_id
+        )
+        return response == 1
+    except Exception as e:
+        logger.error(f"Ошибка проверки подписки: {e}")
+        return False
+
+def create_subscription_keyboard():
+    """Клавиатура для подписки"""
+    keyboard = VkKeyboard(one_time=False)
+    keyboard.add_button("✅ Подписаться", color=VkKeyboardColor.POSITIVE)
+    keyboard.add_line()
+    keyboard.add_button("🔄 Проверить подписку", color=VkKeyboardColor.PRIMARY)
+    return keyboard
 
 def create_keyboard(buttons_text, one_time=False):
     """Создание клавиатуры"""
@@ -215,32 +152,74 @@ def format_result_message(results):
 def send_message(user_id, text, keyboard=None):
     """Отправка сообщения"""
     try:
-        vk.messages.send(
-            user_id=user_id,
-            message=text,
-            keyboard=keyboard.get_keyboard() if keyboard else None,
-            random_id=0
-        )
+        params = {
+            'user_id': user_id,
+            'message': text,
+            'random_id': 0
+        }
+        
+        if keyboard:
+            params['keyboard'] = keyboard.get_keyboard()
+        
+        vk.messages.send(**params)
+        logger.info(f"Сообщение отправлено пользователю {user_id}")
+        
     except Exception as e:
         logger.error(f"Ошибка отправки сообщения: {e}")
 
 def process_message(event):
     """Обработка входящего сообщения"""
     user_id = event.user_id
-    text = event.text.lower()
+    text = event.text.lower().strip()
     
-    # Команды старта
-    if text in ["начать", "старт", "start", "/start", "привет"]:
+    logger.info(f"Получено сообщение от {user_id}: {text}")
+    
+    # Проверка подписки (кроме админов)
+    is_subscribed = check_subscription(user_id) if user_id not in ADMIN_IDS else True
+    
+    # Если не подписан и не админ
+    if not is_subscribed:
+        # Проверяем команду "проверить подписку"
+        if text == "🔄 проверить подписку":
+            if check_subscription(user_id):
+                send_message(
+                    user_id,
+                    "✅ Спасибо за подписку! Теперь вы можете пройти тест.",
+                    create_start_keyboard()
+                )
+                user_states[user_id] = {"state": "subscribed"}
+            else:
+                send_message(
+                    user_id,
+                    "❌ Вы ещё не подписались. Пожалуйста, подпишитесь на группу.",
+                    create_subscription_keyboard()
+                )
+        else:
+            # Предлагаем подписаться
+            subscription_text = (
+                "👋 Здравствуйте!\n\n"
+                "Для прохождения теста необходимо подписаться на нашу группу.\n\n"
+                "Подпишитесь и нажмите «Проверить подписку»."
+            )
+            send_message(user_id, subscription_text, create_subscription_keyboard())
+        
+        return
+    
+    # Команды старта (включая "тест" в любом регистре)
+    if text in ["начать", "старт", "start", "/start", "привет", "тест"]:
         user_states[user_id] = {"state": "waiting_start"}
-        send_message(
-            user_id,
+        
+        welcome_text = (
             "👋 Здравствуйте!\n\n"
             "Это тест «Ваше эмоциональное реагирование»\n"
             "Тест на определение индивидуального стиля совладания с эмоциями\n\n"
+            "Он поможет вам узнать ваш индивидуальный стиль эмоционального реагирования.\n\n"
+            "⚠️ Важно: нет правильных и неправильных ответов.\n\n"
             "📝 Тест состоит из 24 вопросов и займёт около 5–7 минут.\n\n"
-            "Нажмите кнопку ниже, чтобы начать тест.",
-            create_start_keyboard()
+            "Нажмите кнопку ниже, чтобы начать тест."
         )
+        
+        send_message(user_id, welcome_text, create_start_keyboard())
     
     # Начало теста
     elif text == "🚀 начать тест":
@@ -261,7 +240,7 @@ def process_message(event):
         show_question(user_id)
     
     # Ответы на вопросы
-    elif user_id in user_states and user_states[user_id]["state"] == "taking_test":
+    elif user_id in user_states and user_states[user_id].get("state") == "taking_test":
         process_answer(user_id, text)
     
     # Админ-панель
@@ -270,19 +249,19 @@ def process_message(event):
     
     # Помощь
     elif text in ["/help", "помощь", "help"]:
-        send_message(
-            user_id,
-            "🤖 Команды:\n"
-            "• Начать - начать тест\n"
-            "• Помощь - справка\n"
-            "• Статистика - для админов"
+        help_text = (
+            "🤖 Доступные команды:\n\n"
+            "• Начать / Привет / Тест - начать тест\n"
+            "• Помощь - показать справку\n"
+            "• Статистика - статистика (для админов)"
         )
+        send_message(user_id, help_text)
     
     # Неизвестная команда
     else:
         send_message(
             user_id,
-            "Используйте «Начать» для начала теста или «Помощь» для справки.",
+            "Используйте «Начать», «Привет» или «Тест» для начала теста.",
             create_start_keyboard()
         )
 
@@ -363,6 +342,14 @@ def show_stats(user_id):
         stats = {"users": [], "total_tests": 0, "scale_stats": {}}
     
     text = f"📊 Статистика:\n\nВсего тестов: {stats.get('total_tests', 0)}\n"
+    
+    if 'scale_stats' in stats and stats['scale_stats']:
+        text += "\nРаспределение по типам:\n"
+        for scale_id, count in stats['scale_stats'].items():
+            if count > 0:
+                scale_name = SCALES.get(int(scale_id), {}).get('name', f'Тип {scale_id}')
+                text += f"• {scale_name}: {count}\n"
+    
     send_message(user_id, text)
 
 def run_longpoll():
@@ -370,7 +357,10 @@ def run_longpoll():
     logger.info("VK бот запущен")
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-            process_message(event)
+            try:
+                process_message(event)
+            except Exception as e:
+                logger.error(f"Ошибка обработки сообщения: {e}")
 
 async def handle_health(request):
     """HTTP для Render"""
