@@ -411,8 +411,10 @@ def process_answer(user_id, text):
         user_states[user_id] = user_data
         
         show_question(user_id)
+        
     except Exception as e:
         logger.error(f"Ошибка обработки ответа: {e}")
+
 
 def finish_test(user_id):
     """Завершение теста"""
@@ -432,8 +434,10 @@ def finish_test(user_id):
             send_message(user_id, "Хотите пройти тест ещё раз?", keyboard)
         
         user_states[user_id] = {"state": "idle"}
+        
     except Exception as e:
         logger.error(f"Ошибка завершения теста: {e}")
+
 
 def calculate_results(answers, test_id):
     """Подсчет результатов"""
@@ -469,11 +473,135 @@ def calculate_results(answers, test_id):
         "secondary_score": secondary_score
     }
 
+
 def format_result_message(results, test_id):
     """Форматирование результата"""
     scales = get_scales(test_id)
     test_data = TESTS[test_id]
     dominant = scales[results["dominant_type"]]
     
-    message = f"""
-🎯 Ваш результат: {test_data['name
+    message = "🎯 Ваш результат: " + test_data["name"] + "\n\n"
+    message += dominant["name"] + "\n"
+    message += "📊 Термин: " + dominant["term"] + "\n\n"
+    message += "Как проявляется:\n" + dominant["description"] + "\n\n"
+    message += "Цена:\n" + dominant["price"] + "\n\n"
+    message += "Девиз:\n" + dominant["motto"] + "\n\n"
+    message += "Что делать:\n" + dominant["advice"] + "\n\n"
+    message += "📈 Балл: " + str(results["dominant_score"]) + "\n"
+    
+    if results["secondary_type"]:
+        secondary = scales[results["secondary_type"]]
+        message += "\n🔹 Дополнительно: " + secondary["name"] + "\n"
+        message += "📊 " + secondary["term"] + "\n"
+    
+    message += "\n💬 Нужна помощь?\n👉 " + VK_COMMUNITY_URL + "\n"
+    
+    return message
+
+
+def update_stats(user_id, username, dominant_type, scores):
+    """Обновление статистики"""
+    try:
+        stats = load_stats()
+        stats["total_tests"] = stats.get("total_tests", 0) + 1
+        
+        if "scale_stats" not in stats:
+            stats["scale_stats"] = {}
+        
+        key = str(dominant_type)
+        stats["scale_stats"][key] = stats["scale_stats"].get(key, 0) + 1
+        
+        if "users" not in stats:
+            stats["users"] = []
+        
+        stats["users"].append({
+            "id": user_id,
+            "username": username,
+            "dominant_type": dominant_type,
+            "date": datetime.now().isoformat()
+        })
+        
+        save_stats(stats)
+    except Exception as e:
+        logger.error(f"Ошибка обновления статистики: {e}")
+
+
+def load_stats():
+    """Загрузка статистики"""
+    try:
+        with open(STATS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"users": [], "total_tests": 0, "scale_stats": {}}
+
+
+def save_stats(stats):
+    """Сохранение статистики"""
+    try:
+        with open(STATS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Ошибка сохранения статистики: {e}")
+
+
+def show_stats(user_id):
+    """Показ статистики"""
+    try:
+        stats = load_stats()
+        
+        text = "📊 Статистика:\n\n"
+        text += "Всего тестов: " + str(stats.get("total_tests", 0)) + "\n"
+        text += "Всего пользователей: " + str(len(stats.get("users", []))) + "\n"
+        
+        if "scale_stats" in stats and stats["scale_stats"]:
+            text += "\nРаспределение:\n"
+            for scale_id, count in stats["scale_stats"].items():
+                if count > 0:
+                    text += "• Шкала " + str(scale_id) + ": " + str(count) + "\n"
+        
+        send_message(user_id, text)
+    except Exception as e:
+        logger.error(f"Ошибка показа статистики: {e}")
+
+
+def run_longpoll():
+    """Запуск Long Poll в отдельном потоке"""
+    logger.info("VK бот запущен")
+    try:
+        for event in longpoll.listen():
+            if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+                try:
+                    process_message(event)
+                except Exception as e:
+                    logger.error(f"Ошибка обработки сообщения: {e}")
+    except Exception as e:
+        logger.error(f"Ошибка Long Poll: {e}")
+
+
+async def handle_health(request):
+    """HTTP для Render"""
+    return web.Response(text="Bot is running")
+
+
+async def main():
+    """Запуск HTTP сервера и бота"""
+    longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
+    longpoll_thread.start()
+    
+    app = web.Application()
+    app.router.add_get('/', handle_health)
+    app.router.add_get('/health', handle_health)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    
+    logger.info(f"HTTP сервер запущен на порту {PORT}")
+    
+    while True:
+        await asyncio.sleep(3600)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
