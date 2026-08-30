@@ -531,7 +531,13 @@ def format_result_message(results, test_id):
         message += "\n🔹 Дополнительно: " + secondary["name"] + "\n"
         message += "📊 " + secondary["term"] + "\n"
     
-    message += "\n💬 Нужна помощь?\n👉 " + VK_COMMUNITY_URL + "\n"
+    message += "\n====================\n\n"
+    message += "🙏 Благодарю за прохождение теста!\n\n"
+    message += "Помните: это инструмент самопознания, а не диагноз.\n\n"
+    message += "💬 Хотите получить мини консультацию, как с этим справляться?\n"
+    message += "Пишите мне:\n"
+    message += "👉 https://vk.ru/tonker\n\n"
+    message += "Оставайтесь с нами! У нас будет много всего интересного! ✨"
     
     return message
 
