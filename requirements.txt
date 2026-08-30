@@ -1,5 +1,5 @@
 aiohttp==3.8.6
 aiogram==2.25.1
-vkbottle==4.3.11
+vkbottle==4.4.1
 Flask==2.3.3
 requests==2.31.0
