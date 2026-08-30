@@ -275,8 +275,10 @@ def process_message(event):
     try:
         user_id = event.user_id
         text = event.text.lower().strip()
+        
         logger.info(f"Получено сообщение от {user_id}: {text}")
         
+        # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         
         if not is_subscribed:
@@ -285,27 +287,36 @@ def process_message(event):
                     send_message(
                         user_id,
                         "✅ Отлично! Вы подписаны!\n\n"
-                        "Доступные тесты:\n"
-                        "• «Тест» - эмоциональное реагирование\n"
-                        "• «Защита» - психологические защиты\n"
-                        "• «Мышление» - когнитивные искажения\n\n"
-                        "Напишите название теста."
+                        "Напишите одно из слов:\n"
+                        "• тест\n"
+                        "• защита\n"
+                        "• мышление"
                     )
                 else:
-                    send_message(user_id, "❌ Вы ещё не подписались.", create_subscription_keyboard())
+                    send_message(
+                        user_id,
+                        "❌ Вы ещё не подписались.",
+                        create_subscription_keyboard()
+                    )
             else:
                 send_message(
                     user_id,
-                    "👋 Здравствуйте!\n\nДля прохождения тестов необходимо подписаться на группу.",
+                    "👋 Здравствуйте!\n\n"
+                    "Для прохождения тестов необходимо подписаться на группу.",
                     create_subscription_keyboard()
                 )
             return
         
+        # Ищем тест по триггеру
         test_id = find_test_by_trigger(text)
         
         if test_id:
+            # Запускаем тест
             test_data = TESTS[test_id]
-            user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
+            user_states[user_id] = {
+                "state": "waiting_start",
+                "test_id": test_id
+            }
             
             welcome_text = (
                 f"👋 Здравствуйте!\n\n"
@@ -315,11 +326,13 @@ def process_message(event):
                 f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
                 f"Нажмите кнопку ниже, чтобы начать тест."
             )
+            
             send_message(user_id, welcome_text, create_start_keyboard())
         
         elif text == "🚀 начать тест":
             user_data = user_states.get(user_id, {})
             test_id = user_data.get("test_id", "emotional")
+            
             user_states[user_id] = {
                 "state": "taking_test",
                 "test_id": test_id,
@@ -331,6 +344,7 @@ def process_message(event):
         elif text == "🔄 пройти тест снова":
             user_data = user_states.get(user_id, {})
             test_id = user_data.get("test_id", "emotional")
+            
             user_states[user_id] = {
                 "state": "taking_test",
                 "test_id": test_id,
@@ -345,22 +359,17 @@ def process_message(event):
         elif text in ["/admin", "админ", "статистика"] and user_id in ADMIN_IDS:
             show_stats(user_id)
         
-        elif text in ["/help", "помощь", "help"]:
-            help_text = "🤖 Доступные тесты:\n\n"
-            for tid, tdata in TESTS.items():
-                help_text += f"• «{tdata['triggers'][0]}» - {tdata['name']}\n"
-            help_text += "\nНапишите название теста для начала."
-            send_message(user_id, help_text)
-        
         else:
-            tests_list = "Доступные тесты:\n\n"
-            for tid, tdata in TESTS.items():
-                tests_list += f"• «{tdata['triggers'][0]}» - {tdata['name']}\n"
-            tests_list += "\nНапишите название теста для начала."
-            send_message(user_id, tests_list)
+            # На любое другое сообщение - отправляем на вашу страницу
+            send_message(
+                user_id,
+                "По всем вопросам пишите мне:\n"
+                "👉 https://vk.ru/tonker"
+            )
             
     except Exception as e:
         logger.error(f"Ошибка обработки сообщения: {e}")
+
 
 def show_question(user_id):
     """Показ вопроса"""
@@ -377,8 +386,11 @@ def show_question(user_id):
             send_message(user_id, text, create_answer_keyboard(test_id))
         else:
             finish_test(user_id)
+            
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
+        send_message(user_id, "Произошла ошибка. Напишите название теста заново.")
+
 
 def process_answer(user_id, text):
     """Обработка ответа"""
@@ -414,6 +426,7 @@ def process_answer(user_id, text):
         
     except Exception as e:
         logger.error(f"Ошибка обработки ответа: {e}")
+        send_message(user_id, "Произошла ошибка. Напишите название теста заново.")
 
 
 def finish_test(user_id):
@@ -437,6 +450,7 @@ def finish_test(user_id):
         
     except Exception as e:
         logger.error(f"Ошибка завершения теста: {e}")
+        send_message(user_id, "Произошла ошибка. Напишите название теста заново.")
 
 
 def calculate_results(answers, test_id):
@@ -562,6 +576,7 @@ def show_stats(user_id):
         send_message(user_id, text)
     except Exception as e:
         logger.error(f"Ошибка показа статистики: {e}")
+        send_message(user_id, "Ошибка загрузки статистики")
 
 
 def run_longpoll():
