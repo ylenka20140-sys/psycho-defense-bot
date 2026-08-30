@@ -33,107 +33,204 @@ longpoll = VkLongPoll(vk_session)
 # Хранилище состояний пользователей
 user_states = {}
 
-# ===== ТРИГГЕРЫ ДЛЯ ТЕСТОВ =====
-# Сейчас только один тест, но можно добавить больше
-TEST_TRIGGERS = {
-    "emotional": ["тест", "тест на эмоции", "эмоциональное реагирование"],
-    # Добавьте новые тесты здесь:
-    # "depression": ["депрессия", "тест на депрессию"],
-    # "anxiety": ["тревога", "тест на тревожность"],
+# ===== ВСЕ ТЕСТЫ =====
+TESTS = {
+    "emotional": {
+        "name": "Ваше эмоциональное реагирование",
+        "description": "Тест на определение индивидуального стиля совладания с эмоциями",
+        "triggers": ["тест", "эмоции", "эмоциональное реагирование"],
+        "answer_scale": 4,
+        "questions": [
+            {"id": 1, "text": "Когда я злюсь, я говорю «всё нормально», хотя внутри всё кипит", "scales": [1]},
+            {"id": 2, "text": "Я скорее промолчу, чем вступлю в конфликт, даже если меня обидели", "scales": [1]},
+            {"id": 3, "text": "Если на меня накричали, я потом срываюсь на том, кто слабее", "scales": [2]},
+            {"id": 4, "text": "Я могу кричать, бить посуду или хлопать дверью, когда меня довели", "scales": [2]},
+            {"id": 5, "text": "Я долго ношу обиду в себе и прокручиваю в голове, что надо было ответить", "scales": [3]},
+            {"id": 6, "text": "После ссоры я не могу уснуть, потому что мысленно продолжаю спор", "scales": [3]},
+            {"id": 7, "text": "Я убеждён, что злиться — это плохо и стыдно", "scales": [1]},
+            {"id": 8, "text": "Я стараюсь вообще не попадать в ситуации, где возможен конфликт", "scales": [4]},
+            {"id": 9, "text": "Когда я тревожусь, я начинаю есть, даже если не голоден", "scales": [5]},
+            {"id": 10, "text": "От тревоги у меня пропадает аппетит", "scales": [5]},
+            {"id": 11, "text": "Чтобы успокоиться, мне нужно выпить, покурить или принять что-то", "scales": [5]},
+            {"id": 12, "text": "Я загружаю себя делами, чтобы не чувствовать тревогу", "scales": [6]},
+            {"id": 13, "text": "Я часами сижу в телефоне/сериалах/играх, чтобы убежать от неприятных мыслей", "scales": [4]},
+            {"id": 14, "text": "Я фантазирую о другой жизни, где у меня всё хорошо", "scales": [4]},
+            {"id": 15, "text": "Я постоянно проверяю и перепроверяю всё, чтобы не случилось ничего плохого", "scales": [6]},
+            {"id": 16, "text": "Мне нужно, чтобы всё было предсказуемо, иначе я не могу расслабиться", "scales": [6]},
+            {"id": 17, "text": "Когда что-то идёт не так, я виню в этом только себя", "scales": [7]},
+            {"id": 18, "text": "Я называю себя глупым/никчёмным, когда ошибаюсь", "scales": [7]},
+            {"id": 19, "text": "Я говорю себе «да ерунда, не стоит расстраиваться», чтобы не плакать", "scales": [1]},
+            {"id": 20, "text": "Я обесцениваю свои проблемы: «кому-то хуже, чем мне»", "scales": [1]},
+            {"id": 21, "text": "Я ухожу в работу с головой, чтобы не чувствовать боль/грусть", "scales": [6]},
+            {"id": 22, "text": "Я могу сутками лежать и ничего не делать, когда мне плохо", "scales": [4]},
+            {"id": 23, "text": "Я заедаю грусть или наоборот — не могу есть совсем", "scales": [5]},
+            {"id": 24, "text": "Мне сложно просить помощи, я должен справляться сам", "scales": [6]},
+        ],
+        "scales": {
+            1: {"name": "Подавитель", "term": "Вытеснение (репрессия)", "description": "«Я не чувствую» / «Я справлюсь сам». Эмоции замораживаются, человек выглядит спокойным, но внутри — вулкан.", "price": "Психосоматика, эмоциональная глухота к близким.", "motto": "«Если я не признаю чувство — его нет».", "advice": "Учиться замечать телесные сигналы и называть эмоции словами."},
+            2: {"name": "Взрыватель", "term": "Отреагирование / Замещение", "description": "Эмоция мгновенно выплёскивается на того, кто под рукой.", "price": "Разрушенные отношения, чувство вины.", "motto": "«Лучше выпустить пар, чем лопнуть».", "advice": "Отслеживать признаки гнева и делать паузу."},
+            3: {"name": "Мыслитель", "term": "Руминация / Интеллектуализация", "description": "Вместо чувств — бесконечный анализ.", "price": "Истощение мозга, бессонница.", "motto": "«Если я всё пойму, мне станет легче».", "advice": "Переключаться с мыслей на тело."},
+            4: {"name": "Убегающий", "term": "Избегание / Эскапизм", "description": "Уход от реальности: сериалы, игры, сон.", "price": "Проблемы копятся.", "motto": "«Если я не вижу проблему — её нет».", "advice": "10 минут в день наедине с собой."},
+            5: {"name": "Заглушающий", "term": "Химический / Пищевой копинг", "description": "Тело как контейнер для эмоций.", "price": "Зависимость, разрушение здоровья.", "motto": "«Если я изменю химию тела...»", "advice": "Вести дневник эмоций."},
+            6: {"name": "Контролёр", "term": "Гиперконтроль / Перфекционизм", "description": "Тотальный контроль всего.", "price": "Истощение, выгорание.", "motto": "«Если я всё контролирую...»", "advice": "Тренироваться отпускать мелочи."},
+            7: {"name": "Самонаказывающий", "term": "Аутоагрессия", "description": "Агрессия направлена на себя.", "price": "Депрессия, низкая самооценка.", "motto": "«Лучше я сам себя накажу».", "advice": "Говорить с собой как с другом."}
+        }
+    },
+    
+    "defense": {
+        "name": "Диагностика психологических защит",
+        "description": "Определение ведущих защитных механизмов личности",
+        "triggers": ["защита", "защиты", "психологические защиты", "диагностика защит"],
+        "answer_scale": 5,
+        "questions": [
+            {"id": 1, "text": "Когда задача кажется слишком сложной, я просто её не делаю", "scales": [1]},
+            {"id": 2, "text": "Если что-то расстраивает, я этого избегаю", "scales": [1]},
+            {"id": 3, "text": "Когда настроение плохое, я отдаляюсь от людей и бросаю дела", "scales": [1]},
+            {"id": 4, "text": "Когда тревожно, мне нужно, чтобы кто-то поддержал и сказал, что всё будет хорошо", "scales": [2]},
+            {"id": 5, "text": "Я постоянно всё перепроверяю, чтобы убедиться, что порядок", "scales": [2]},
+            {"id": 6, "text": "У меня есть свои ритуалы, которые снимают страх", "scales": [2]},
+            {"id": 7, "text": "Я поступаю импульсивно, как велит мне настроение", "scales": [3]},
+            {"id": 8, "text": "Когда я расстраиваюсь, я теряю самоконтроль", "scales": [3]},
+            {"id": 9, "text": "Я делаю что-то на эмоциях, даже если знаю, что потом пожалею", "scales": [3]},
+            {"id": 10, "text": "Мне невыносимо грустить или огорчаться", "scales": [4]},
+            {"id": 11, "text": "Я не выношу физические ощущения стресса (сердце колотится, тело напряжено)", "scales": [4]},
+            {"id": 12, "text": "Физические симптомы стресса пугают меня и кажутся невыносимыми", "scales": [4]},
+            {"id": 13, "text": "Я стараюсь не замечать свои эмоции, когда грустно", "scales": [5]},
+            {"id": 14, "text": "Я обычно отгоняю неприятные чувства", "scales": [5]},
+            {"id": 15, "text": "Когда мне плохо, я заставляю себя перестать это чувствовать", "scales": [5]},
+            {"id": 16, "text": "Когда приходят грустные мысли, я сразу пытаюсь от них избавиться", "scales": [6]},
+            {"id": 17, "text": "Я отгоняю тяжёлые воспоминания", "scales": [6]},
+            {"id": 18, "text": "Мне нужно блокировать болезненные мысли", "scales": [6]},
+            {"id": 19, "text": "В стрессе я мыслю крайностями: «или идеально, или полный провал»", "scales": [7]},
+            {"id": 20, "text": "В сложной ситуации я тороплюсь с выводами", "scales": [7]},
+            {"id": 21, "text": "В трудных ситуациях я уверен(а), что знаю, о чём думают другие", "scales": [7]},
+            {"id": 22, "text": "Если что-то идёт не так, я виню себя", "scales": [8]},
+            {"id": 23, "text": "Я критикую себя за свои решения и ошибки", "scales": [8]},
+            {"id": 24, "text": "Я виню себя даже тогда, когда другие говорят, что я не виноват(а)", "scales": [8]},
+            {"id": 25, "text": "Я осуждаю других за их поведение и злюсь", "scales": [9]},
+            {"id": 26, "text": "Я критикую других за их ошибки", "scales": [9]},
+            {"id": 27, "text": "Если у меня что-то не выходит, я думаю, что виноваты окружающие", "scales": [9]},
+            {"id": 28, "text": "Я прокручиваю в голове всё плохое, что может случиться в будущем", "scales": [10]},
+            {"id": 29, "text": "Столкнувшись с проблемой, я зацикливаюсь на самом страшном сценарии", "scales": [10]},
+            {"id": 30, "text": "Я предполагаю худшее и сильно преувеличиваю масштаб беды", "scales": [10]},
+            {"id": 31, "text": "Я зацикливаюсь на неприятных событиях из прошлого", "scales": [11]},
+            {"id": 32, "text": "Я постоянно прокручиваю в голове неприятные события и пытаюсь понять, почему так вышло", "scales": [11]},
+            {"id": 33, "text": "Я подолгу анализирую события прошлого, возвращаясь к ним мыслями", "scales": [11]},
+        ],
+        "scales": {
+            1: {"name": "Избегание", "term": "Уход от проблем", "description": "Твоя психика защищается через уход.", "price": "Проблемы накапливаются.", "motto": "«Я подумаю об этом завтра».", "advice": "«Правило 5 минут» — просто начни."},
+            2: {"name": "Ритуализация", "term": "Поиск опоры в повторениях", "description": "В тревоге ты ищешь опору в повторяющихся действиях.", "price": "Отнимает силы.", "motto": "«Если я проверю всё 3 раза...»", "advice": "Сделай ритуал на один раз меньше."},
+            3: {"name": "Эмоциональная реактивность", "term": "Импульсивность", "description": "Эмоции берут верх над разумом.", "price": "Разрушенные отношения.", "motto": "«Я чувствую, значит действую».", "advice": "Сделай 5 глубоких вдохов."},
+            4: {"name": "Интолерантность к стрессу", "term": "Непереносимость дискомфорта", "description": "Любое напряжение кажется невыносимым.", "price": "Ограничение жизни.", "motto": "«Лишь бы это прекратилось».", "advice": "Перенеси внимание в стопы."},
+            5: {"name": "Подавление эмоций", "term": "Замораживание чувств", "description": "Вместо проживания чувств ты их «выключаешь».", "price": "Психосоматика.", "motto": "«Я не чувствую».", "advice": "Пиши 3 минуты о чувствах."},
+            6: {"name": "Избегание мыслей", "term": "Блокировка мыслей", "description": "Ты пытаешься не думать о боли.", "price": "Мысли возвращаются сильнее.", "motto": "«Я не буду об этом думать».", "advice": "Представь мысль на облаке."},
+            7: {"name": "Когнитивные искажения", "term": "Крайности мышления", "description": "Мозг мыслит крайностями.", "price": "Искажённое восприятие.", "motto": "«Всё или ничего».", "advice": "Придумай 3 спокойных объяснения."},
+            8: {"name": "Самообвинение", "term": "Аутоагрессия", "description": "Ты винишь себя во всём.", "price": "Депрессия.", "motto": "«Это всё из-за меня».", "advice": "Раздели ответственность."},
+            9: {"name": "Экстернализация", "term": "Проекция", "description": "Ты ищешь причины в других.", "price": "Позиция жертвы.", "motto": "«Это они виноваты».", "advice": "Спроси: «Что я могу сделать?»"},
+            10: {"name": "Катастрофизация", "term": "Преувеличение угрозы", "description": "Мозг рисует страшные сценарии.", "price": "Постоянная тревога.", "motto": "«А что, если...»", "advice": "Выдели 15 минут для тревоги."},
+            11: {"name": "Руминация", "term": "Пережёвывание прошлого", "description": "Ты прокручиваешь прошлое.", "price": "Силы уходят.", "motto": "«Почему так?»", "advice": "Спроси: «Что теперь?»"}
+        }
+    },
+    
+    "thinking": {
+        "name": "Диагностика когнитивных искажений",
+        "description": "Определение «ловушек» мышления",
+        "triggers": ["мышление", "искажения", "когнитивные искажения", "ловушки мышления"],
+        "answer_scale": 5,
+        "questions": [
+            {"id": 1, "text": "Я часто мыслю крайностями: «или идеально, или никак»", "scales": [1]},
+            {"id": 2, "text": "Любая моя ошибка кажется мне тотальным провалом", "scales": [1]},
+            {"id": 3, "text": "В людях я вижу либо только хорошее, либо только плохое", "scales": [1]},
+            {"id": 4, "text": "Я часто прокручиваю в голове худшие сценарии", "scales": [2]},
+            {"id": 5, "text": "Я сильно преувеличиваю масштаб проблем и их последствий", "scales": [2]},
+            {"id": 6, "text": "Мне кажется, что если что-то пойдёт не так, это будет катастрофа", "scales": [2]},
+            {"id": 7, "text": "Я часто думаю, что знаю, о чём думают другие люди", "scales": [3]},
+            {"id": 8, "text": "Я уверен(а), что окружающие оценивают и осуждают меня", "scales": [3]},
+            {"id": 9, "text": "Я предполагаю, что другие обо мне плохого мнения, не проверяя это", "scales": [3]},
+            {"id": 10, "text": "Из одной неудачи я делаю вывод, что у меня вообще ничего не получается", "scales": [4]},
+            {"id": 11, "text": "Если что-то идёт не так в одном месте, я думаю, что так будет везде", "scales": [4]},
+            {"id": 12, "text": "Я делаю глобальные выводы из единичных случаев", "scales": [4]},
+            {"id": 13, "text": "У меня есть много жёстких правил о том, как должны поступать другие", "scales": [5]},
+            {"id": 14, "text": "Я часто говорю «я должен/должна» и чувствую вину, если не справляюсь", "scales": [5]},
+            {"id": 15, "text": "Когда люди не соответствуют моим ожиданиям, я сильно раздражаюсь", "scales": [5]},
+            {"id": 16, "text": "Я не замечаю свои успехи и достижения — я их обесцениваю", "scales": [6]},
+            {"id": 17, "text": "Хорошие события кажутся мне неважными или случайными", "scales": [6]},
+            {"id": 18, "text": "Я концентрируюсь на негативе, даже если позитива было больше", "scales": [6]},
+            {"id": 19, "text": "Я считаю, что мои чувства всегда отражают реальность", "scales": [7]},
+            {"id": 20, "text": "Если я боюсь, я думаю, что есть реальная опасность", "scales": [7]},
+            {"id": 21, "text": "Если я чувствую себя виноватой, значит, я действительно виновата", "scales": [7]},
+            {"id": 22, "text": "Я часто беру на себя ответственность за настроение других", "scales": [8]},
+            {"id": 23, "text": "Мне кажется, что люди вокруг меня расстраиваются из-за моих действий", "scales": [8]},
+            {"id": 24, "text": "Я чувствую себя ответственной за всё, что происходит вокруг", "scales": [8]},
+            {"id": 25, "text": "Я часто называю себя негативными словами (дура, неудачник, идиотка)", "scales": [9]},
+            {"id": 26, "text": "Я навешиваю ярлыки на других людей", "scales": [9]},
+            {"id": 27, "text": "Я определяю человека одним его поступком", "scales": [9]},
+        ],
+        "scales": {
+            1: {"name": "Черно-белое мышление", "term": "Крайности", "description": "Ты видишь мир в крайностях: или идеально, или ужасно.", "price": "Любая ошибка превращается в провал.", "motto": "«Всё или ничего».", "advice": "Найди «средний» вариант."},
+            2: {"name": "Катастрофизация", "term": "Преувеличение", "description": "Ты преувеличиваешь масштаб проблемы.", "price": "Постоянная тревога.", "motto": "«А что, если...»", "advice": "Спроси: «Что самое страшное?»"},
+            3: {"name": "Чтение мыслей", "term": "Домысливание", "description": "Ты уверен(а), что знаешь мысли других.", "price": "Обиды в отношениях.", "motto": "«Я знаю, что ты думаешь».", "advice": "Спроси прямо."},
+            4: {"name": "Чрезмерное обобщение", "term": "Глобализация", "description": "Из одного случая — глобальный вывод.", "price": "Низкая самооценка.", "motto": "«У меня никогда...»", "advice": "Найди исключение."},
+            5: {"name": "Долженствование", "term": "Жёсткие правила", "description": "Жёсткие правила о том, как всё должно быть.", "price": "Злость и разочарование.", "motto": "«Друзья должны...»", "advice": "Замени «должен» на «предпочитаю»."},
+            6: {"name": "Обесценивание позитива", "term": "Фильтрация", "description": "Ты не замечаешь хорошее.", "price": "Потеря радости.", "motto": "«Это случайно».", "advice": "Записывай 3 хорошие вещи."},
+            7: {"name": "Эмоциональное обоснование", "term": "Чувства = реальность", "description": "Ты путаешь чувства с реальностью.", "price": "Тревога управляет жизнью.", "motto": "«Я боюсь = есть опасность».", "advice": "Раздели чувства и факты."},
+            8: {"name": "Персонализация", "term": "Всё из-за меня", "description": "Ты берёшь ответственность за всё.", "price": "Чувство вины.", "motto": "«Это я виноват(а)».", "advice": "Спроси: «Это про меня?»"},
+            9: {"name": "Навешивание ярлыков", "term": "Стереотипизация", "description": "Ты определяешь одним словом.", "price": "Нет места для изменений.", "motto": "«Я дура».", "advice": "Замени ярлык на описание."}
+        }
+    },
 }
 
-# Определение вопросов
-QUESTIONS = [
-    # Блок A: Реакция на злость и конфликт (вопросы 1-8)
-    {"id": 1, "block": "A", "text": "Когда я злюсь, я говорю «всё нормально», хотя внутри всё кипит", "scales": [1]},
-    {"id": 2, "block": "A", "text": "Я скорее промолчу, чем вступлю в конфликт, даже если меня обидели", "scales": [1]},
-    {"id": 3, "block": "A", "text": "Если на меня накричали, я потом срываюсь на том, кто слабее (ребёнок, животное, подчинённый)", "scales": [2]},
-    {"id": 4, "block": "A", "text": "Я могу кричать, бить посуду или хлопать дверью, когда меня довели", "scales": [2]},
-    {"id": 5, "block": "A", "text": "Я долго ношу обиду в себе и прокручиваю в голове, что надо было ответить", "scales": [3]},
-    {"id": 6, "block": "A", "text": "После ссоры я не могу уснуть, потому что мысленно продолжаю спор", "scales": [3]},
-    {"id": 7, "block": "A", "text": "Я убеждён, что злиться — это плохо и стыдно", "scales": [1]},
-    {"id": 8, "block": "A", "text": "Я стараюсь вообще не попадать в ситуации, где возможен конфликт", "scales": [4]},
-    
-    # Блок B: Реакция на тревогу и страх (вопросы 9-16)
-    {"id": 9, "block": "B", "text": "Когда я тревожусь, я начинаю есть, даже если не голоден", "scales": [5]},
-    {"id": 10, "block": "B", "text": "От тревоги у меня пропадает аппетит", "scales": [5]},
-    {"id": 11, "block": "B", "text": "Чтобы успокоиться, мне нужно выпить, покурить или принять что-то", "scales": [5]},
-    {"id": 12, "block": "B", "text": "Я загружаю себя делами, чтобы не чувствовать тревогу", "scales": [6]},
-    {"id": 13, "block": "B", "text": "Я часами сижу в телефоне/сериалах/играх, чтобы убежать от неприятных мыслей", "scales": [4]},
-    {"id": 14, "block": "B", "text": "Я фантазирую о другой жизни, где у меня всё хорошо", "scales": [4]},
-    {"id": 15, "block": "B", "text": "Я постоянно проверяю и перепроверяю всё, чтобы не случилось ничего плохого", "scales": [6]},
-    {"id": 16, "block": "B", "text": "Мне нужно, чтобы всё было предсказуемо, иначе я не могу расслабиться", "scales": [6]},
-    
-    # Блок C: Реакция на грусть, вину и неудачи (вопросы 17-24)
-    {"id": 17, "block": "C", "text": "Когда что-то идёт не так, я виню в этом только себя", "scales": [7]},
-    {"id": 18, "block": "C", "text": "Я называю себя глупым/никчёмным, когда ошибаюсь", "scales": [7]},
-    {"id": 19, "block": "C", "text": "Я говорю себе «да ерунда, не стоит расстраиваться», чтобы не плакать", "scales": [1]},
-    {"id": 20, "block": "C", "text": "Я обесцениваю свои проблемы: «кому-то хуже, чем мне»", "scales": [1]},
-    {"id": 21, "block": "C", "text": "Я ухожу в работу с головой, чтобы не чувствовать боль/грусть", "scales": [6]},
-    {"id": 22, "block": "C", "text": "Я могу сутками лежать и ничего не делать, когда мне плохо", "scales": [4]},
-    {"id": 23, "block": "C", "text": "Я заедаю грусть или наоборот — не могу есть совсем", "scales": [5]},
-    {"id": 24, "block": "C", "text": "Мне сложно просить помощи, я должен справляться сам", "scales": [6]},
-]
+# ===== ФУНКЦИИ =====
 
-# Описание шкал
-SCALES = {
-    1: {
-        "name": "Подавитель",
-        "term": "Вытеснение (репрессия)",
-        "description": "«Я не чувствую» / «Я справлюсь сам». Эмоции замораживаются, человек выглядит спокойным, но внутри — вулкан.",
-        "price": "Психосоматика (головные боли, давление, панические атаки «на ровном месте»), эмоциональная глухота к близким.",
-        "motto": "«Если я не признаю чувство — его нет».",
-        "advice": "Учиться замечать телесные сигналы (зажимы, дыхание) и называть эмоции словами. Начните с фразы: «Мне сейчас неприятно, и это нормально»."
-    },
-    2: {
-        "name": "Взрыватель",
-        "term": "Отреагирование / Замещение",
-        "description": "Эмоция не удерживается внутри, а мгновенно выплёскивается на того, кто под рукой.",
-        "price": "Разрушенные отношения, чувство вины после вспышек, репутация «истерика» или «агрессора».",
-        "motto": "«Лучше выпустить пар, чем лопнуть».",
-        "advice": "Отслеживать первые признаки нарастающего гнева (сжатые кулаки, жар, учащённое дыхание) и делать паузу. Задайте себе вопрос: «На кого я на самом деле злюсь?»"
-    },
-    3: {
-        "name": "Мыслитель",
-        "term": "Руминация / Интеллектуализация",
-        "description": "Вместо того чтобы чувствовать, человек начинает бесконечно анализировать.",
-        "price": "Истощение мозга, бессонница, жизнь «в голове», потеря контакта с телом и реальностью.",
-        "motto": "«Если я всё пойму, мне станет легче».",
-        "advice": "Переключаться с мыслей на тело. Спросить себя: «Где я это чувствую физически?»"
-    },
-    4: {
-        "name": "Убегающий",
-        "term": "Избегание / Эскапизм",
-        "description": "Любой способ уйти от реальности: сериалы, игры, сон, фантазии, соцсети.",
-        "price": "Проблемы копятся, жизнь проходит мимо.",
-        "motto": "«Если я не вижу проблему — её не существует».",
-        "advice": "Начать с малого: 10 минут в день оставаться наедине с собой."
-    },
-    5: {
-        "name": "Заглушающий",
-        "term": "Химический / Пищевой копинг",
-        "description": "Тело используется как контейнер для эмоций.",
-        "price": "Зависимость, разрушение здоровья, стыд.",
-        "motto": "«Если я изменю химию тела, я перестану чувствовать».",
-        "advice": "Вести дневник: записывать, какая эмоция предшествовала импульсу."
-    },
-    6: {
-        "name": "Контролёр",
-        "term": "Гиперконтроль / Перфекционизм",
-        "description": "Попытка устранить тревогу через тотальный контроль.",
-        "price": "Истощение, выгорание, одиночество.",
-        "motto": "«Если я всё контролирую, со мной не случится ничего плохого».",
-        "advice": "Тренироваться отпускать: начать с мелочей."
-    },
-    7: {
-        "name": "Самонаказывающий",
-        "term": "Аутоагрессия",
-        "description": "Вся агрессия направляется на себя.",
-        "price": "Депрессия, низкая самооценка.",
-        "motto": "«Лучше я сам себя накажу».",
-        "advice": "Говорить с собой так, как с другом."
-    }
-}
+def find_test_by_trigger(text):
+    """Находит тест по триггеру"""
+    text = text.lower().strip()
+    
+    for test_id, test_data in TESTS.items():
+        for trigger in test_data["triggers"]:
+            if text == trigger or text.startswith(trigger):
+                return test_id
+    
+    return None
+
+def get_questions(test_id):
+    """Получает вопросы теста"""
+    return TESTS[test_id]["questions"]
+
+def get_scales(test_id):
+    """Получает шкалы теста"""
+    return TESTS[test_id]["scales"]
+
+def get_answer_scale(test_id):
+    """Получает шкалу ответов"""
+    return TESTS[test_id].get("answer_scale", 4)
+
+def create_answer_keyboard(test_id):
+    """Создает клавиатуру в зависимости от теста"""
+    answer_scale = get_answer_scale(test_id)
+    
+    keyboard = VkKeyboard(one_time=False)
+    
+    if answer_scale == 5:
+        keyboard.add_button("1 - Почти никогда", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("2 - Редко", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("3 - Иногда", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("4 - Часто", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("5 - Очень часто", color=VkKeyboardColor.SECONDARY)
+    else:
+        keyboard.add_button("1 - Совсем не про меня", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("2 - Иногда бывает", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("3 - Часто бывает", color=VkKeyboardColor.SECONDARY)
+        keyboard.add_line()
+        keyboard.add_button("4 - Это точно про меня", color=VkKeyboardColor.SECONDARY)
+    
+    return keyboard
 
 def check_subscription(user_id):
     """Проверка подписки на группу"""
@@ -170,20 +267,6 @@ def create_start_keyboard():
     keyboard.add_button("🚀 Начать тест", color=VkKeyboardColor.POSITIVE)
     return keyboard
 
-def create_answer_keyboard():
-    """Клавиатура с вариантами ответов"""
-    keyboard = VkKeyboard(one_time=False)
-    
-    keyboard.add_button("1 - Совсем не про меня", color=VkKeyboardColor.SECONDARY)
-    keyboard.add_line()
-    keyboard.add_button("2 - Иногда бывает", color=VkKeyboardColor.SECONDARY)
-    keyboard.add_line()
-    keyboard.add_button("3 - Часто бывает", color=VkKeyboardColor.SECONDARY)
-    keyboard.add_line()
-    keyboard.add_button("4 - Это точно про меня", color=VkKeyboardColor.SECONDARY)
-    
-    return keyboard
-
 def send_message(user_id, text, keyboard=None):
     """Отправка сообщения"""
     try:
@@ -202,17 +285,6 @@ def send_message(user_id, text, keyboard=None):
     except Exception as e:
         logger.error(f"Ошибка отправки сообщения: {e}")
 
-def find_test_by_trigger(text):
-    """Находит тест по триггеру"""
-    text = text.lower().strip()
-    
-    for test_id, triggers in TEST_TRIGGERS.items():
-        for trigger in triggers:
-            if text == trigger or text.startswith(trigger):
-                return test_id
-    
-    return None
-
 def process_message(event):
     """Обработка входящего сообщения"""
     try:
@@ -221,73 +293,76 @@ def process_message(event):
         
         logger.info(f"Получено сообщение от {user_id}: {text}")
         
-        # Проверяем подписку ПЕРВЫМ ДЕЛОМ
+        # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         
-        # Если не подписан
         if not is_subscribed:
             if text == "✅ проверить подписку":
                 if check_subscription(user_id):
                     send_message(
                         user_id,
                         "✅ Отлично! Вы подписаны!\n\n"
-                        "Теперь вы можете пройти тест.\n"
-                        "Напишите «Тест» чтобы начать.",
-                        create_start_keyboard()
+                        "Доступные тесты:\n"
+                        "• «Тест» - эмоциональное реагирование\n"
+                        "• «Защита» - психологические защиты\n"
+                        "• «Мышление» - когнитивные искажения\n\n"
+                        "Напишите название теста."
                     )
                 else:
                     send_message(
                         user_id,
-                        "❌ Вы ещё не подписались на группу.\n\n"
-                        "Пожалуйста, подпишитесь и нажмите «Проверить подписку» снова.",
+                        "❌ Вы ещё не подписались.",
                         create_subscription_keyboard()
                     )
             else:
-                subscription_text = (
+                send_message(
+                    user_id,
                     "👋 Здравствуйте!\n\n"
-                    "Для прохождения теста необходимо подписаться на нашу группу.\n\n"
-                    "1️⃣ Нажмите «Подписаться на группу»\n"
-                    "2️⃣ Подпишитесь\n"
-                    "3️⃣ Вернитесь и нажмите «Проверить подписку»"
+                    "Для прохождения тестов необходимо подписаться на группу.",
+                    create_subscription_keyboard()
                 )
-                
-                send_message(user_id, subscription_text, create_subscription_keyboard())
-            
             return
         
-        # Если подписан, проверяем триггеры тестов
+        # Находим тест по триггеру
         test_id = find_test_by_trigger(text)
         
         if test_id:
-            # Запускаем тест
+            test_data = TESTS[test_id]
             user_states[user_id] = {
                 "state": "waiting_start",
                 "test_id": test_id
             }
             
             welcome_text = (
-                "👋 Здравствуйте!\n\n"
-                "Это тест «Ваше эмоциональное реагирование»\n"
-                "Тест на определение индивидуального стиля совладания с эмоциями\n\n"
-                "Он поможет вам узнать ваш индивидуальный стиль эмоционального реагирования.\n\n"
-                "⚠️ Важно: нет правильных и неправильных ответов.\n\n"
-                "📝 Тест состоит из 24 вопросов и займёт около 5–7 минут.\n\n"
-                "Нажмите кнопку ниже, чтобы начать тест."
+                f"👋 Здравствуйте!\n\n"
+                f"Это тест «{test_data['name']}»\n"
+                f"{test_data['description']}\n\n"
+                f"⚠️ Важно: нет правильных и неправильных ответов.\n\n"
+                f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
+                f"Нажмите кнопку ниже, чтобы начать тест."
             )
             
             send_message(user_id, welcome_text, create_start_keyboard())
         
         elif text == "🚀 начать тест":
+            user_data = user_states.get(user_id, {})
+            test_id = user_data.get("test_id", "emotional")
+            
             user_states[user_id] = {
                 "state": "taking_test",
+                "test_id": test_id,
                 "current_question": 0,
                 "answers": []
             }
             show_question(user_id)
         
         elif text == "🔄 пройти тест снова":
+            user_data = user_states.get(user_id, {})
+            test_id = user_data.get("test_id", "emotional")
+            
             user_states[user_id] = {
                 "state": "taking_test",
+                "test_id": test_id,
                 "current_question": 0,
                 "answers": []
             }
@@ -300,20 +375,18 @@ def process_message(event):
             show_stats(user_id)
         
         elif text in ["/help", "помощь", "help"]:
-            help_text = (
-                "🤖 Доступные команды:\n\n"
-                "• Тест - начать тест на эмоциональное реагирование\n"
-                "• Помощь - показать справку\n"
-                "• Статистика - статистика (для админов)"
-            )
+            help_text = "🤖 Доступные тесты:\n\n"
+            for tid, tdata in TESTS.items():
+                help_text += f"• «{tdata['triggers'][0]}» - {tdata['name']}\n"
+            help_text += "\nНапишите название теста для начала."
             send_message(user_id, help_text)
         
         else:
-            # Неизвестная команда
-            send_message(
-                user_id,
-                "Напишите «Тест» чтобы начать тест на эмоциональное реагирование."
-            )
+            tests_list = "Доступные тесты:\n\n"
+            for tid, tdata in TESTS.items():
+                tests_list += f"• «{tdata['triggers'][0]}» - {tdata['name']}\n"
+            tests_list += "\nНапишите название теста для начала."
+            send_message(user_id, tests_list)
             
     except Exception as e:
         logger.error(f"Ошибка обработки сообщения: {e}")
@@ -321,36 +394,24 @@ def process_message(event):
 def show_question(user_id):
     """Показ вопроса"""
     try:
-        if user_id not in user_states:
-            user_states[user_id] = {
-                "state": "taking_test",
-                "current_question": 0,
-                "answers": []
-            }
-        
-        user_data = user_states[user_id]
+        user_data = user_states.get(user_id, {})
+        test_id = user_data.get("test_id", "emotional")
         current = user_data.get("current_question", 0)
         
-        if current < len(QUESTIONS):
-            question = QUESTIONS[current]
+        questions = get_questions(test_id)
+        
+        if current < len(questions):
+            question = questions[current]
             
-            block_names = {
-                "A": "Реакция на злость и конфликт",
-                "B": "Реакция на тревогу и страх",
-                "C": "Реакция на грусть, вину и неудачи"
-            }
-            
-            text = f"📋 Вопрос {current + 1} из {len(QUESTIONS)}\n\n"
-            text += f"📌 {block_names[question['block']]}\n\n"
+            text = f"📋 Вопрос {current + 1} из {len(questions)}\n\n"
             text += question["text"]
             
-            send_message(user_id, text, create_answer_keyboard())
+            send_message(user_id, text, create_answer_keyboard(test_id))
         else:
             finish_test(user_id)
             
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
-        send_message(user_id, "Произошла ошибка. Напишите «Тест» для перезапуска.")
 
 def process_answer(user_id, text):
     """Обработка ответа"""
@@ -364,236 +425,11 @@ def process_answer(user_id, text):
             answer = 3
         elif text.startswith("4"):
             answer = 4
+        elif text.startswith("5"):
+            answer = 5
         
         if answer is None:
-            send_message(user_id, "Выберите ответ от 1 до 4")
+            send_message(user_id, "Выберите ответ от 1 до 5")
             return
         
-        if user_id not in user_states:
-            user_states[user_id] = {
-                "state": "taking_test",
-                "current_question": 0,
-                "answers": []
-            }
-        
-        user_data = user_states[user_id]
-        
-        if "answers" not in user_data:
-            user_data["answers"] = []
-        if "current_question" not in user_data:
-            user_data["current_question"] = 0
-        
-        user_data["answers"].append(answer)
-        user_data["current_question"] += 1
-        
-        show_question(user_id)
-        
-    except Exception as e:
-        logger.error(f"Ошибка обработки ответа: {e}")
-        send_message(user_id, "Произошла ошибка. Напишите «Тест» для перезапуска.")
-
-def finish_test(user_id):
-    """Завершение теста"""
-    try:
-        user_data = user_states.get(user_id, {})
-        answers = user_data.get("answers", [])
-        
-        if len(answers) == len(QUESTIONS):
-            results = calculate_results(answers)
-            message = format_result_message(results)
-            send_message(user_id, message)
-            
-            # Сохраняем статистику
-            user_info = vk.users.get(user_ids=user_id)
-            if user_info:
-                username = f"{user_info[0]['first_name']} {user_info[0]['last_name']}"
-            else:
-                username = f"Пользователь {user_id}"
-            
-            update_stats(user_id, username, results["dominant_type"], results["scores"])
-            
-            keyboard = VkKeyboard(one_time=False)
-            keyboard.add_button("🔄 Пройти тест снова", color=VkKeyboardColor.POSITIVE)
-            
-            send_message(user_id, "Хотите пройти тест ещё раз?", keyboard)
-        
-        user_states[user_id] = {"state": "idle"}
-        
-    except Exception as e:
-        logger.error(f"Ошибка завершения теста: {e}")
-
-def calculate_results(answers):
-    """Подсчет результатов"""
-    scale_scores = {i: 0 for i in range(1, 8)}
-    
-    for i, answer in enumerate(answers):
-        question = QUESTIONS[i]
-        for scale in question["scales"]:
-            scale_scores[scale] += answer
-    
-    dominant_type = max(scale_scores, key=scale_scores.get)
-    dominant_score = scale_scores[dominant_type]
-    
-    sorted_scales = sorted(scale_scores.items(), key=lambda x: x[1], reverse=True)
-    secondary_type = None
-    secondary_score = 0
-    
-    if len(sorted_scales) > 1:
-        second_scale, second_score = sorted_scales[1]
-        if second_score >= dominant_score * 0.7:
-            secondary_type = second_scale
-            secondary_score = second_score
-    
-    return {
-        "scores": scale_scores,
-        "dominant_type": dominant_type,
-        "dominant_score": dominant_score,
-        "secondary_type": secondary_type,
-        "secondary_score": secondary_score
-    }
-
-def format_result_message(results):
-    """Форматирование результата"""
-    dominant = SCALES[results["dominant_type"]]
-    
-    message = f"""
-🎯 Ваш результат
-
-{dominant['name']}
-📊 Термин: {dominant['term']}
-
-Как проявляется:
-{dominant['description']}
-
-Цена такого стиля:
-{dominant['price']}
-
-Скрытый девиз:
-{dominant['motto']}
-
-Что делать:
-{dominant['advice']}
-
-📈 Балл: {results['dominant_score']}
-"""
-    
-    if results["secondary_type"]:
-        secondary = SCALES[results["secondary_type"]]
-        message += f"""
-🔹 Дополнительный тип: {secondary['name']}
-📊 Термин: {secondary['term']}
-"""
-    
-    message += f"""
-💬 Хотите получить персональные рекомендации?
-👉 {VK_COMMUNITY_URL}
-"""
-    
-    return message
-
-def update_stats(user_id, username, dominant_type, scores):
-    """Обновление статистики"""
-    try:
-        stats = load_stats()
-        
-        stats["total_tests"] += 1
-        
-        if "scale_stats" not in stats:
-            stats["scale_stats"] = {}
-        
-        if str(dominant_type) not in stats["scale_stats"]:
-            stats["scale_stats"][str(dominant_type)] = 0
-        
-        stats["scale_stats"][str(dominant_type)] += 1
-        
-        if "users" not in stats:
-            stats["users"] = []
-        
-        stats["users"].append({
-            "id": user_id,
-            "username": username,
-            "dominant_type": dominant_type,
-            "date": datetime.now().isoformat()
-        })
-        
-        save_stats(stats)
-        
-    except Exception as e:
-        logger.error(f"Ошибка обновления статистики: {e}")
-
-def load_stats():
-    """Загрузка статистики"""
-    try:
-        with open(STATS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"users": [], "total_tests": 0, "scale_stats": {}}
-
-def save_stats(stats):
-    """Сохранение статистики"""
-    try:
-        with open(STATS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(stats, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        logger.error(f"Ошибка сохранения статистики: {e}")
-
-def show_stats(user_id):
-    """Показ статистики"""
-    try:
-        stats = load_stats()
-        
-        text = f"📊 Статистика:\n\n"
-        text += f"Всего тестов: {stats.get('total_tests', 0)}\n"
-        text += f"Всего пользователей: {len(stats.get('users', []))}\n"
-        
-        if 'scale_stats' in stats and stats['scale_stats']:
-            text += "\nРаспределение по типам:\n"
-            for scale_id, count in stats['scale_stats'].items():
-                if count > 0:
-                    scale_name = SCALES.get(int(scale_id), {}).get('name', f'Тип {scale_id}')
-                    text += f"• {scale_name}: {count}\n"
-        
-        send_message(user_id, text)
-        
-    except Exception as e:
-        logger.error(f"Ошибка показа статистики: {e}")
-        send_message(user_id, "Ошибка загрузки статистики")
-
-def run_longpoll():
-    """Запуск Long Poll в отдельном потоке"""
-    logger.info("VK бот запущен")
-    try:
-        for event in longpoll.listen():
-            if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                try:
-                    process_message(event)
-                except Exception as e:
-                    logger.error(f"Ошибка обработки сообщения: {e}")
-    except Exception as e:
-        logger.error(f"Ошибка Long Poll: {e}")
-
-async def handle_health(request):
-    """HTTP для Render"""
-    return web.Response(text="Bot is running")
-
-async def main():
-    """Запуск HTTP сервера и бота"""
-    longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
-    longpoll_thread.start()
-    
-    app = web.Application()
-    app.router.add_get('/', handle_health)
-    app.router.add_get('/health', handle_health)
-    
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
-    await site.start()
-    
-    logger.info(f"HTTP сервер запущен на порту {PORT}")
-    
-    while True:
-        await asyncio.sleep(3600)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        user_data = user_states
