@@ -1,8 +1,30 @@
 import os
 import asyncio
 import json
-from vkbottle import Bot
-from vkbottle.types import Message
+import subprocess
+import sys
+
+# ==================== САМОПРОВЕРКА ВЕРСИИ ====================
+def ensure_vkbottle_version():
+    """Гарантирует установку vkbottle 3.0.1"""
+    try:
+        from vkbottle.types import Message
+        print("✅ vkbottle 3.0.1 работает корректно")
+        return
+    except ImportError:
+        print("🔄 Переустановка vkbottle на версию 3.0.1...")
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install",
+            "--force-reinstall", "--no-cache-dir", "vkbottle==3.0.1"
+        ])
+        print("✅ Переустановка завершена. Перезапуск...")
+        os.execv(sys.executable, ['python'] + sys.argv)
+
+# Вызываем в самом начале
+ensure_vkbottle_version()
+
+# ==================== ИМПОРТЫ ====================
+from vkbottle import Bot, Message
 from vkbottle.bot import BotLabeler
 from vkbottle.types import Keyboard, KeyboardButtonColor, Text
 
@@ -80,7 +102,7 @@ TYPES = [
     },
 ]
 
-# Хранилище
+# Хранилище ответов
 user_answers = {}
 
 # ==================== КЛАВИАТУРЫ ====================
