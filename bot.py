@@ -571,47 +571,72 @@ def process_message(event):
         text = event.text.lower().strip()
         logger.info(f"Получено сообщение от {user_id}: {text}")
         
+        # Ищем тест по триггеру
+        test_id = find_test_by_trigger(text)
+        
+        # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         
-        if not is_subscribed:
-            if text == "✅ проверить подписку":
-                if check_subscription(user_id):
-                    send_message(
-                        user_id,
-                        "✅ Отлично! Вы подписаны!\n\n"
-                        "Напишите одно из слов:\n"
-                        "• тест\n"
-                        "• защита\n"
-                        "• мышление\n"
-                        "• проекция"
-                    )
-                else:
-                    send_message(user_id, "❌ Вы ещё не подписались.", create_subscription_keyboard())
+        # Если пользователь пишет триггерное слово
+        if test_id:
+            if is_subscribed:
+                # Подписан - сразу запускаем тест
+                test_data = TESTS[test_id]
+                user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
+                
+                welcome_text = (
+                    f"👋 Здравствуйте!\n\n"
+                    f"Это тест «{test_data['name']}»\n"
+                    f"{test_data['description']}\n\n"
+                    f"⚠️ Важно: нет правильных и неправильных ответов.\n\n"
+                    f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
+                    f"Нажмите кнопку ниже, чтобы начать тест."
+                )
+                send_message(user_id, welcome_text, create_start_keyboard())
             else:
+                # Не подписан - просим подписаться
+                user_states[user_id] = {"state": "waiting_subscription", "test_id": test_id}
                 send_message(
                     user_id,
-                    "👋 Здравствуйте!\n\nДля прохождения тестов необходимо подписаться на группу.",
+                    "Для прохождения теста необходимо подписаться на группу.\n\n"
+                    "Подпишитесь и нажмите «Проверить подписку».",
                     create_subscription_keyboard()
                 )
             return
         
-        test_id = find_test_by_trigger(text)
+        # Проверка подписки (кнопка)
+        if text == "✅ проверить подписку":
+            if check_subscription(user_id):
+                user_data = user_states.get(user_id, {})
+                test_id = user_data.get("test_id", "emotional")
+                test_data = TESTS[test_id]
+                
+                send_message(
+                    user_id,
+                    f"✅ Отлично! Вы подписаны!\n\n"
+                    f"Запускаю тест «{test_data['name']}»..."
+                )
+                
+                user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
+                
+                welcome_text = (
+                    f"Это тест «{test_data['name']}»\n"
+                    f"{test_data['description']}\n\n"
+                    f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
+                    f"Нажмите кнопку ниже, чтобы начать тест."
+                )
+                send_message(user_id, welcome_text, create_start_keyboard())
+            else:
+                send_message(
+                    user_id,
+                    "❌ Вы ещё не подписались.\n\n"
+                    "Нажмите «Подписаться на группу», подпишитесь, и затем «Проверить подписку».",
+                    create_subscription_keyboard()
+                )
+            return
         
-        if test_id:
-            test_data = TESTS[test_id]
-            user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
-            
-            welcome_text = (
-                f"👋 Здравствуйте!\n\n"
-                f"Это тест «{test_data['name']}»\n"
-                f"{test_data['description']}\n\n"
-                f"⚠️ Важно: нет правильных и неправильных ответов.\n\n"
-                f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
-                f"Нажмите кнопку ниже, чтобы начать тест."
-            )
-            send_message(user_id, welcome_text, create_start_keyboard())
-        
-        elif text == "🚀 начать тест":
+        # Начало теста
+        if text == "🚀 начать тест":
             user_data = user_states.get(user_id, {})
             test_id = user_data.get("test_id", "emotional")
             user_states[user_id] = {
