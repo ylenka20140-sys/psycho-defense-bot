@@ -794,7 +794,7 @@ def format_result_message(results, test_id):
     message = "🎯 Ваш результат: " + test_data["name"] + "\n\n"
     message += "═" * 20 + "\n\n"
     
-    # Доминирующий тип
+    # Ведущий тип
     dominant_score = scores[results["dominant_type"]]
     message += "👑 Ваш ведущий тип:\n\n"
     message += "⭐ " + dominant["name"] + "\n"
@@ -807,39 +807,43 @@ def format_result_message(results, test_id):
     message += "💡 Что делать:\n" + dominant["advice"] + "\n\n"
     
     message += "═" * 20 + "\n\n"
+    
+    # Дополнительные стили (до 2-х)
+    additional = []
+    for scale_id, score in sorted_scales:
+        if scale_id != results["dominant_type"]:
+            scale = scales[scale_id]
+            percent = (score / (4 * len(get_questions(test_id)))) * 100
+            additional.append((scale, score, percent))
+    
+    if len(additional) >= 1:
+        message += "💪 Ваши дополнительные стили:\n\n"
+        
+        # Первый дополнительный
+        scale1, score1, percent1 = additional[0]
+        message += f"1️⃣ {scale1['name']} — {score1} баллов\n"
+        message += f"   {scale1['term']}\n\n"
+        
+        # Второй дополнительный (если есть)
+        if len(additional) >= 2:
+            scale2, score2, percent2 = additional[1]
+            message += f"2️⃣ {scale2['name']} — {score2} баллов\n"
+            message += f"   {scale2['term']}\n\n"
+        
+        message += "═" * 20 + "\n\n"
+    
+    # Полный профиль (простой список)
     message += "📊 Ваш полный профиль:\n\n"
     
-    # Показываем все шкалы с визуальной шкалой
     for i, (scale_id, score) in enumerate(sorted_scales, 1):
         scale = scales[scale_id]
-        
-        # Процент от максимума
-        max_score = max(scores.values()) * 1.5  # для визуализации
-        if max_score == 0:
-            max_score = 1
-        percent = (score / (4 * len(get_questions(test_id)))) * 100
-        
-        # Визуальная шкала
-        bar_length = min(int(percent / 10), 10)
-        bar = "█" * bar_length + "░" * (10 - bar_length)
-        
         if scale_id == results["dominant_type"]:
-            emoji = "👑"
+            marker = "👑"
         else:
-            emoji = "•"
-        
-        message += f"{emoji} {scale['name']}\n"
-        message += f"   {bar} {score} баллов ({percent:.0f}%)\n\n"
+            marker = "•"
+        message += f"{marker} {scale['name']} — {score} баллов\n"
     
-    message += "═" * 20 + "\n\n"
-    
-    # Дополнительный тип
-    if results["secondary_type"]:
-        secondary = scales[results["secondary_type"]]
-        message += "💪 Ваш дополнительный стиль:\n"
-        message += "• " + secondary["name"] + "\n"
-        message += "  " + secondary["term"] + "\n\n"
-        message += "═" * 20 + "\n\n"
+    message += "\n" + "═" * 20 + "\n\n"
     
     message += "🙏 Благодарю за прохождение теста!\n\n"
     message += "Помните: это инструмент самопознания, а не диагноз.\n\n"
