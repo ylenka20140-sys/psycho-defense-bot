@@ -571,16 +571,92 @@ def process_message(event):
         text = event.text.lower().strip()
         logger.info(f"Получено сообщение от {user_id}: {text}")
         
+        # === НАВИГАЦИЯ ПО ТЕСТУ ===
+        
+        # Стоп-слово — остановить тест
+        if text in ["стоп", "stop", "отмена", "прекратить", "закончить", "выйти", "хватит"]:
+            user_states[user_id] = {"state": "idle"}
+            send_message(
+                user_id,
+                "⏹ Тест остановлен.\n\n"
+                "Если захотите пройти снова — напишите:\n"
+                "• тест\n"
+                "• защита\n"
+                "• мышление\n"
+                "• проекция"
+            )
+            return
+        
+        # Начать сначала
+        if text in ["сначала", "заново", "перезапустить", "restart", "с начала"]:
+            user_data = user_states.get(user_id, {})
+            if user_data.get("state") == "taking_test":
+                test_id = user_data.get("test_id", "emotional")
+                user_states[user_id] = {
+                    "state": "taking_test",
+                    "test_id": test_id,
+                    "current_question": 0,
+                    "answers": []
+                }
+                send_message(user_id, "🔄 Тест начат заново!\n\n")
+                show_question(user_id)
+            else:
+                send_message(
+                    user_id,
+                    "Сейчас нет активного теста.\n\n"
+                    "Напишите:\n"
+                    "• тест\n"
+                    "• защита\n"
+                    "• мышление\n"
+                    "• проекция"
+                )
+            return
+        
+        # Вернуться к предыдущему вопросу
+        if text in ["назад", "вернуться", "предыдущий", "back", "назад к вопросу"]:
+            user_data = user_states.get(user_id, {})
+            if user_data.get("state") == "taking_test":
+                current = user_data.get("current_question", 0)
+                answers = user_data.get("answers", [])
+                
+                if current > 0 and len(answers) > 0:
+                    # Убираем последний ответ
+                    answers.pop()
+                    current -= 1
+                    
+                    user_states[user_id] = {
+                        "state": "taking_test",
+                        "test_id": user_data.get("test_id", "emotional"),
+                        "current_question": current,
+                        "answers": answers
+                    }
+                    
+                    send_message(user_id, "⬅️ Возвращаемся к предыдущему вопросу...\n\n")
+                    show_question(user_id)
+                else:
+                    send_message(user_id, "Это первый вопрос. Назад нельзя.")
+            else:
+                send_message(
+                    user_id,
+                    "Сейчас нет активного теста.\n\n"
+                    "Напишите:\n"
+                    "• тест\n"
+                    "• защита\n"
+                    "• мышление\n"
+                    "• проекция"
+                )
+            return
+        
+        # === КОНЕЦ НАВИГАЦИИ ===
+        
         # Ищем тест по триггеру
         test_id = find_test_by_trigger(text)
         
         # Проверяем подписку
         is_subscribed = check_subscription(user_id)
         
-        # Если пользователь пишет триггерное слово
         if test_id:
             if is_subscribed:
-                # Подписан - сразу запускаем тест
                 test_data = TESTS[test_id]
                 user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
                 
@@ -594,7 +670,6 @@ def process_message(event):
                 )
                 send_message(user_id, welcome_text, create_start_keyboard())
             else:
-                # Не подписан - просим подписаться
                 user_states[user_id] = {"state": "waiting_subscription", "test_id": test_id}
                 send_message(
                     user_id,
@@ -686,45 +761,16 @@ def show_question(user_id):
             question = questions[current]
             text = f"📋 Вопрос {current + 1} из {len(questions)}\n\n"
             text += question["text"]
+            
+            # Подсказка о навигации (начиная со 2 вопроса)
+            if current > 0:
+                text += "\n\n🎮 «назад» | «сначала» | «стоп»"
+            
             send_message(user_id, text, create_answer_keyboard(test_id))
         else:
             finish_test(user_id)
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
-
-def process_answer(user_id, text):
-    """Обработка ответа"""
-    try:
-        answer = None
-        if text.startswith("1"):
-            answer = 1
-        elif text.startswith("2"):
-            answer = 2
-        elif text.startswith("3"):
-            answer = 3
-        elif text.startswith("4"):
-            answer = 4
-        elif text.startswith("5"):
-            answer = 5
-        
-        if answer is None:
-            send_message(user_id, "Выберите ответ от 1 до 5")
-            return
-        
-        user_data = user_states.get(user_id, {})
-        
-        if "answers" not in user_data:
-            user_data["answers"] = []
-        if "current_question" not in user_data:
-            user_data["current_question"] = 0
-        
-        user_data["answers"].append(answer)
-        user_data["current_question"] += 1
-        user_states[user_id] = user_data
-        
-        show_question(user_id)
-    except Exception as e:
-        logger.error(f"Ошибка обработки ответа: {e}")
 
 def finish_test(user_id):
     """Завершение теста"""
