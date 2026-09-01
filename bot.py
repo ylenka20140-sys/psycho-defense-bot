@@ -767,6 +767,42 @@ def show_question(user_id):
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
 
+
+def process_answer(user_id, text):
+    """Обработка ответа"""
+    try:
+        answer = None
+        if text.startswith("1"):
+            answer = 1
+        elif text.startswith("2"):
+            answer = 2
+        elif text.startswith("3"):
+            answer = 3
+        elif text.startswith("4"):
+            answer = 4
+        elif text.startswith("5"):
+            answer = 5
+        
+        if answer is None:
+            send_message(user_id, "Выберите ответ от 1 до 5")
+            return
+        
+        user_data = user_states.get(user_id, {})
+        
+        if "answers" not in user_data:
+            user_data["answers"] = []
+        if "current_question" not in user_data:
+            user_data["current_question"] = 0
+        
+        user_data["answers"].append(answer)
+        user_data["current_question"] += 1
+        user_states[user_id] = user_data
+        
+        show_question(user_id)
+    except Exception as e:
+        logger.error(f"Ошибка обработки ответа: {e}")
+
+
 def finish_test(user_id):
     """Завершение теста"""
     try:
@@ -779,6 +815,19 @@ def finish_test(user_id):
             results = calculate_results(answers, test_id)
             message = format_result_message(results, test_id)
             send_message(user_id, message)
+            
+            # Получаем имя пользователя
+            try:
+                user_info = vk.users.get(user_ids=user_id)
+                if user_info:
+                    username = f"{user_info[0]['first_name']} {user_info[0]['last_name']}"
+                else:
+                    username = f"Пользователь {user_id}"
+            except:
+                username = f"Пользователь {user_id}"
+            
+            # Обновляем статистику
+            update_stats(user_id, username, results["dominant_type"], results["scores"])
             
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button("🔄 Пройти тест снова", color=VkKeyboardColor.POSITIVE)
