@@ -573,13 +573,10 @@ def process_message(event):
         
         # === НАВИГАЦИЯ ПО ТЕСТУ ===
         
-             # Стоп-слово — остановить тест
+        # Стоп-слово — остановить тест
         if text in ["стоп", "stop", "отмена", "прекратить", "закончить", "выйти", "хватит"]:
             user_states[user_id] = {"state": "idle"}
-            send_message(
-                user_id,
-                "⏹ Тест остановлен."
-            )
+            send_message(user_id, "⏹ Тест остановлен.")
             return
         
         # Начать сначала
@@ -596,26 +593,17 @@ def process_message(event):
                 send_message(user_id, "🔄 Тест начат заново!\n\n")
                 show_question(user_id)
             else:
-                send_message(
-                    user_id,
-                    "Сейчас нет активного теста.\n\n"
-                    "Напишите:\n"
-                    "• тест\n"
-                    "• защита\n"
-                    "• мышление\n"
-                    "• проекция"
-                )
+                send_message(user_id, "Сейчас нет активного теста.")
             return
         
         # Вернуться к предыдущему вопросу
-        if text in ["назад", "вернуться", "предыдущий", "back", "назад к вопросу"]:
+        if text in ["назад", "вернуться", "предыдущий", "back"]:
             user_data = user_states.get(user_id, {})
             if user_data.get("state") == "taking_test":
                 current = user_data.get("current_question", 0)
                 answers = user_data.get("answers", [])
                 
                 if current > 0 and len(answers) > 0:
-                    # Убираем последний ответ
                     answers.pop()
                     current -= 1
                     
@@ -631,15 +619,7 @@ def process_message(event):
                 else:
                     send_message(user_id, "Это первый вопрос. Назад нельзя.")
             else:
-                send_message(
-                    user_id,
-                    "Сейчас нет активного теста.\n\n"
-                    "Напишите:\n"
-                    "• тест\n"
-                    "• защита\n"
-                    "• мышление\n"
-                    "• проекция"
-                )
+                send_message(user_id, "Сейчас нет активного теста.")
             return
         
         # === КОНЕЦ НАВИГАЦИИ ===
@@ -757,7 +737,6 @@ def show_question(user_id):
             text = f"📋 Вопрос {current + 1} из {len(questions)}\n\n"
             text += question["text"]
             
-            # Подсказка о навигации (начиная со 2 вопроса)
             if current > 0:
                 text += "\n\n🎮 «назад» | «сначала» | «стоп»"
             
@@ -766,7 +745,6 @@ def show_question(user_id):
             finish_test(user_id)
     except Exception as e:
         logger.error(f"Ошибка показа вопроса: {e}")
-
 
 def process_answer(user_id, text):
     """Обработка ответа"""
@@ -802,7 +780,6 @@ def process_answer(user_id, text):
     except Exception as e:
         logger.error(f"Ошибка обработки ответа: {e}")
 
-
 def finish_test(user_id):
     """Завершение теста"""
     try:
@@ -816,7 +793,6 @@ def finish_test(user_id):
             message = format_result_message(results, test_id)
             send_message(user_id, message)
             
-            # Получаем имя пользователя
             try:
                 user_info = vk.users.get(user_ids=user_id)
                 if user_info:
@@ -826,7 +802,6 @@ def finish_test(user_id):
             except:
                 username = f"Пользователь {user_id}"
             
-            # Обновляем статистику
             update_stats(user_id, username, results["dominant_type"], results["scores"])
             
             keyboard = VkKeyboard(one_time=False)
@@ -878,13 +853,11 @@ def format_result_message(results, test_id):
     dominant = scales[results["dominant_type"]]
     scores = results["scores"]
     
-    # Сортируем шкалы от большего к меньшему
     sorted_scales = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     
     message = "🎯 Ваш результат: " + test_data["name"] + "\n\n"
     message += "═" * 20 + "\n\n"
     
-    # Ведущий тип
     dominant_score = scores[results["dominant_type"]]
     message += "👑 Ваш ведущий тип:\n\n"
     message += "⭐ " + dominant["name"] + "\n"
@@ -898,31 +871,26 @@ def format_result_message(results, test_id):
     
     message += "═" * 20 + "\n\n"
     
-    # Дополнительные стили (до 2-х)
     additional = []
     for scale_id, score in sorted_scales:
         if scale_id != results["dominant_type"]:
             scale = scales[scale_id]
-            percent = (score / (4 * len(get_questions(test_id)))) * 100
-            additional.append((scale, score, percent))
+            additional.append((scale, score))
     
     if len(additional) >= 1:
         message += "💪 Ваши дополнительные стили:\n\n"
         
-        # Первый дополнительный
-        scale1, score1, percent1 = additional[0]
+        scale1, score1 = additional[0]
         message += f"1️⃣ {scale1['name']} — {score1} баллов\n"
         message += f"   {scale1['term']}\n\n"
         
-        # Второй дополнительный (если есть)
         if len(additional) >= 2:
-            scale2, score2, percent2 = additional[1]
+            scale2, score2 = additional[1]
             message += f"2️⃣ {scale2['name']} — {score2} баллов\n"
             message += f"   {scale2['term']}\n\n"
         
         message += "═" * 20 + "\n\n"
     
-    # Полный профиль (простой список)
     message += "📊 Ваш полный профиль:\n\n"
     
     for i, (scale_id, score) in enumerate(sorted_scales, 1):
@@ -1005,9 +973,42 @@ def show_stats(user_id):
     except Exception as e:
         logger.error(f"Ошибка показа статистики: {e}")
 
+def run_longpoll():
+    """Запуск Long Poll с автоперезапуском"""
+    logger.info("VK бот запущен")
+    
+    global longpoll, vk_session, vk
+    
+    while True:
+        try:
+            logger.info("Запуск Long Poll...")
+            for event in longpoll.listen():
+                if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+                    try:
+                        process_message(event)
+                    except Exception as e:
+                        logger.error(f"Ошибка обработки сообщения: {e}")
+        except Exception as e:
+            logger.error(f"Ошибка Long Poll: {e}")
+            logger.info("Перезапуск Long Poll через 10 секунд...")
+            time.sleep(10)
+            try:
+                vk_session = vk_api.VkApi(token=VK_TOKEN)
+                vk = vk_session.get_api()
+                longpoll = VkLongPoll(vk_session)
+                logger.info("Long Poll перезапущен")
+            except Exception as e2:
+                logger.error(f"Ошибка пересоздания Long Poll: {e2}")
+                time.sleep(30)
+
+
+async def handle_health(request):
+    """HTTP для Render"""
+    return web.Response(text="Bot is running")
+
+
 async def main():
     """Запуск HTTP сервера и бота"""
-    # Запускаем Long Poll в отдельном потоке
     longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
     longpoll_thread.start()
     
@@ -1022,36 +1023,15 @@ async def main():
     
     logger.info(f"HTTP сервер запущен на порту {PORT}")
     
-    # Проверяем Long Poll каждые 5 минут
     while True:
         await asyncio.sleep(300)
         if not longpoll_thread.is_alive():
             logger.info("Long Poll поток остановлен. Перезапуск...")
             longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
             longpoll_thread.start()
+        else:
+            logger.info("Long Poll работает нормально")
 
-async def handle_health(request):
-    """HTTP для Render"""
-    return web.Response(text="Bot is running")
-
-async def main():
-    """Запуск HTTP сервера и бота"""
-    longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
-    longpoll_thread.start()
-    
-    app = web.Application()
-    app.router.add_get('/', handle_health)
-    app.router.add_get('/health', handle_health)
-    
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
-    await site.start()
-    
-    logger.info(f"HTTP сервер запущен на порту {PORT}")
-    
-    while True:
-        await asyncio.sleep(3600)
 
 if __name__ == "__main__":
     asyncio.run(main())
