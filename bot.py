@@ -1005,18 +1005,30 @@ def show_stats(user_id):
     except Exception as e:
         logger.error(f"Ошибка показа статистики: {e}")
 
-def run_longpoll():
-    """Запуск Long Poll"""
-    logger.info("VK бот запущен")
-    try:
-        for event in longpoll.listen():
-            if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                try:
-                    process_message(event)
-                except Exception as e:
-                    logger.error(f"Ошибка: {e}")
-    except Exception as e:
-        logger.error(f"Ошибка Long Poll: {e}")
+async def main():
+    """Запуск HTTP сервера и бота"""
+    # Запускаем Long Poll в отдельном потоке
+    longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
+    longpoll_thread.start()
+    
+    app = web.Application()
+    app.router.add_get('/', handle_health)
+    app.router.add_get('/health', handle_health)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    
+    logger.info(f"HTTP сервер запущен на порту {PORT}")
+    
+    # Проверяем Long Poll каждые 5 минут
+    while True:
+        await asyncio.sleep(300)
+        if not longpoll_thread.is_alive():
+            logger.info("Long Poll поток остановлен. Перезапуск...")
+            longpoll_thread = threading.Thread(target=run_longpoll, daemon=True)
+            longpoll_thread.start()
 
 async def handle_health(request):
     """HTTP для Render"""
