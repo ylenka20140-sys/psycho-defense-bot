@@ -11,7 +11,7 @@ import asyncio
 import threading
 
 # ===== НАСТРОЙКИ =====
-VK_TOKEN = os.environ.get("VK_TOKEN", "8vk1.a.a_3dITwtsV9pQscXoUm1fgSpAtJDYBCaFkPZ30GRn4KqdpreBbX_9TP_e5oKJ7Kq5VSu_b1wKtNjcadpGDpN8AOxuipt34XEIvsW8KohkWGBO2Xtp7X5EK2H4e4ScGGWnRAWOx0726cjUYPWwtVX-wK_39mIA_nM0SCyvKhr6KgNbGZeqnTDp4ru_hSXj9jTeHkpBG1xPcYkNoanCMfY-g")
+VK_TOKEN = os.environ.get("VK_TOKEN", "vk1.a.-Rig7zZ8Iqh8fVAg5dXtv1TcGj4cJZcYaB4h98voBm29kl91gxVJslH4DNfCK-_BJFwvmHJb49MfJtbn8LaQzNwkY1Bcz3XchielLWU6xxCFBALB5RF9ygzW0rnUtCJMy1hu-N3P6bDXhi1GO4AsgSTA8pRAR2TR181sUoc6EU-FrUf7z3YIGqHoIYVCtYgyttEWRZhzg-G74vr8miUp-w")
 GROUP_ID = int(os.environ.get("GROUP_ID", "240718452"))
 ADMIN_IDS = [int(x) for x in os.environ.get("ADMIN_IDS", "111655732").split(",")]
 VK_COMMUNITY_URL = os.environ.get("VK_COMMUNITY_URL", "https://vk.com/club240718452")
