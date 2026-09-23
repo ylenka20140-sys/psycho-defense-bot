@@ -690,9 +690,9 @@ def process_message(event):
         if text == "✅ проверить подписку":
             if check_subscription(user_id):
                 user_data = user_states.get(user_id, {})
-                test_id = user_data.get("test_id", "emotional")
+                test_id = user_data.get("test_id", "")
 
-                # Если пришёл за гайдом — отправляем гайд
+                # Если пришёл за гайдом — отправляем гайд и ВЫХОДИМ
                 if test_id == "guide_women":
                     send_guide(user_id, "women")
                     user_states[user_id] = {"state": "idle"}
@@ -703,22 +703,26 @@ def process_message(event):
                     user_states[user_id] = {"state": "idle"}
                     return
 
-                # Иначе — тест, как раньше
-                test_data = TESTS[test_id]
-                send_message(
-                    user_id,
-                    f"✅ Отлично! Вы подписаны!\n\n"
-                    f"Запускаю тест «{test_data['name']}»..."
-                )
-                user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
+                # Иначе — тест (только если test_id реально тест)
+                if test_id in TESTS:
+                    test_data = TESTS[test_id]
+                    send_message(
+                        user_id,
+                        f"✅ Отлично! Вы подписаны!\n\n"
+                        f"Запускаю тест «{test_data['name']}»..."
+                    )
+                    user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
 
-                welcome_text = (
-                    f"Это тест «{test_data['name']}»\n"
-                    f"{test_data['description']}\n\n"
-                    f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
-                    f"Нажмите кнопку ниже, чтобы начать тест."
-                )
-                send_message(user_id, welcome_text, create_start_keyboard())
+                    welcome_text = (
+                        f"Это тест «{test_data['name']}»\n"
+                        f"{test_data['description']}\n\n"
+                        f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
+                        f"Нажмите кнопку ниже, чтобы начать тест."
+                    )
+                    send_message(user_id, welcome_text, create_start_keyboard())
+                else:
+                    send_message(user_id, "✅ Отлично! Вы подписаны!")
+                    user_states[user_id] = {"state": "idle"}
             else:
                 send_message(
                     user_id,
