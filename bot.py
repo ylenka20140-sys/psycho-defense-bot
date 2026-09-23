@@ -557,7 +557,17 @@ def create_start_keyboard():
     return keyboard
 
 def send_message(user_id, text, keyboard=None):
-    ...
+    """Отправка сообщения"""
+    try:
+        params = {
+            'user_id': user_id,
+            'message': text,
+            'random_id': 0
+        }
+        if keyboard:
+            params['keyboard'] = keyboard.get_keyboard()
+        vk.messages.send(**params)
+        logger.info(f"Сообщение отправлено пользователю {user_id}")
     except Exception as e:
         logger.error(f"Ошибка отправки сообщения: {e}")
 
