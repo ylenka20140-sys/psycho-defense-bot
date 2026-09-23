@@ -505,7 +505,7 @@ def get_answer_scale(test_id):
 def create_answer_keyboard(test_id):
     """Создает клавиатуру"""
     answer_scale = get_answer_scale(test_id)
-    keyboard = VkKeyboard(one_time=False)
+    keyboard = VkKeyboard(one_time=True)  # ← теперь исчезнет после нажатия
     
     if answer_scale == 5:
         keyboard.add_button("1 - Почти никогда", color=VkKeyboardColor.SECONDARY)
@@ -552,7 +552,7 @@ def create_subscription_keyboard():
 
 def create_start_keyboard():
     """Клавиатура для старта"""
-    keyboard = VkKeyboard(one_time=False)
+    keyboard = VkKeyboard(one_time=True)
     keyboard.add_button("🚀 Начать тест", color=VkKeyboardColor.POSITIVE)
     return keyboard
 
@@ -610,7 +610,7 @@ def process_message(event):
         # Стоп-слово — остановить тест
         if text in ["стоп", "stop", "отмена", "прекратить", "закончить", "выйти", "хватит"]:
             user_states[user_id] = {"state": "idle"}
-            send_message(user_id, "⏹ Тест остановлен.")
+            send_message(user_id, "⏹ Тест остановлен.", VkKeyboard.get_empty_keyboard())
             return
 
         # Начать сначала
@@ -624,10 +624,10 @@ def process_message(event):
                     "current_question": 0,
                     "answers": []
                 }
-                send_message(user_id, "🔄 Тест начат заново!\n\n")
+                send_message(user_id, "🔄 Тест начат заново!\n\n", VkKeyboard.get_empty_keyboard())
                 show_question(user_id)
             else:
-                send_message(user_id, "Сейчас нет активного теста.")
+                send_message(user_id, "Сейчас нет активного теста.", VkKeyboard.get_empty_keyboard())
             return
 
         # Вернуться к предыдущему вопросу
@@ -881,7 +881,7 @@ def finish_test(user_id):
             
             update_stats(user_id, username, results["dominant_type"], results["scores"])
             
-            keyboard = VkKeyboard(one_time=False)
+            keyboard = VkKeyboard(one_time=True)
             keyboard.add_button("🔄 Пройти тест снова", color=VkKeyboardColor.POSITIVE)
             send_message(user_id, "Хотите пройти тест ещё раз?", keyboard)
         
