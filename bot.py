@@ -660,6 +660,7 @@ def process_message(event):
 
         # ===== ГАЙДЫ =====
         if any(t in text for t in GUIDE_WOMEN_TRIGGERS):
+            user_states[user_id] = {"state": "idle"}  # сбрасываем состояние теста
             if check_subscription(user_id):
                 send_guide(user_id, "women")
             else:
@@ -671,8 +672,8 @@ def process_message(event):
                     create_subscription_keyboard()
                 )
             return
-
         if any(t in text for t in GUIDE_MEN_TRIGGERS):
+            user_states[user_id] = {"state": "idle"}  # сбрасываем состояние теста
             if check_subscription(user_id):
                 send_guide(user_id, "men")
             else:
@@ -681,36 +682,6 @@ def process_message(event):
                     user_id,
                     "Чтобы получить гайд, подпишись на сообщество 💙\n\n"
                     "Подпишись и нажми «Проверить подписку».",
-                    create_subscription_keyboard()
-                )
-            return
-
-        # Ищем тест по триггеру
-        test_id = find_test_by_trigger(text)
-
-        # Проверяем подписку
-        is_subscribed = check_subscription(user_id)
-
-        if test_id:
-            if is_subscribed:
-                test_data = TESTS[test_id]
-                user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
-
-                welcome_text = (
-                    f"👋 Здравствуйте!\n\n"
-                    f"Это тест «{test_data['name']}»\n"
-                    f"{test_data['description']}\n\n"
-                    f"⚠️ Важно: нет правильных и неправильных ответов.\n\n"
-                    f"📝 Тест состоит из {len(test_data['questions'])} вопросов.\n\n"
-                    f"Нажмите кнопку ниже, чтобы начать тест."
-                )
-                send_message(user_id, welcome_text, create_start_keyboard())
-            else:
-                user_states[user_id] = {"state": "waiting_subscription", "test_id": test_id}
-                send_message(
-                    user_id,
-                    "Для прохождения теста необходимо подписаться на группу.\n\n"
-                    "Подпишитесь и нажмите «Проверить подписку».",
                     create_subscription_keyboard()
                 )
             return
