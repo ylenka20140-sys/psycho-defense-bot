@@ -638,7 +638,22 @@ def process_message(event):
         if text in ["назад", "вернуться", "предыдущий", "back"]:
             user_data = user_states.get(user_id, {})
             if user_data.get("state") == "taking_test":
-                ...
+                current = user_data.get("current_question", 0)
+                answers = user_data.get("answers", [])
+
+                if current > 0 and len(answers) > 0:
+                    answers.pop()
+                    current -= 1
+
+                    user_states[user_id] = {
+                        "state": "taking_test",
+                        "test_id": user_data.get("test_id", "emotional"),
+                        "current_question": current,
+                        "answers": answers
+                    }
+
+                    send_message(user_id, "⬅️ Возвращаемся к предыдущему вопросу...\n\n")
+                    show_question(user_id)
                 else:
                     send_message(user_id, "Это первый вопрос. Назад нельзя.")
             else:
