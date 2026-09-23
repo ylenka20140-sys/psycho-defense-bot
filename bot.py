@@ -27,6 +27,13 @@ longpoll = VkLongPoll(vk_session)
 
 user_states = {}
 
+# ===== ГАЙДЫ =====
+GUIDE_WOMEN_DOC = "-240718452_705813250"   # женский
+GUIDE_MEN_DOC   = "-240718452_705813442"   # мужской
+
+GUIDE_WOMEN_TRIGGERS = ["себе", "🤍", "женский"]
+GUIDE_MEN_TRIGGERS   = ["сила", "💙", "мужской"]
+
 # ===== ВСЕ ТЕСТЫ =====
 TESTS = {
     "emotional": {
@@ -550,19 +557,40 @@ def create_start_keyboard():
     return keyboard
 
 def send_message(user_id, text, keyboard=None):
-    """Отправка сообщения"""
-    try:
-        params = {
-            'user_id': user_id,
-            'message': text,
-            'random_id': 0
-        }
-        if keyboard:
-            params['keyboard'] = keyboard.get_keyboard()
-        vk.messages.send(**params)
-        logger.info(f"Сообщение отправлено пользователю {user_id}")
+    ...
     except Exception as e:
         logger.error(f"Ошибка отправки сообщения: {e}")
+
+def send_guide(user_id, guide_type="women"):
+    """Отправка гайда"""
+    try:
+        if guide_type == "women":
+            doc_id = GUIDE_WOMEN_DOC
+            text = (
+                "Привет, рада видеть тебя в моём сообществе 🤍\n\n"
+                "Отправляю обещанный подарочек — гайд «10 фраз, которые стоит говорить себе». "
+                "Поддержка для тех дней, когда особенно трудно.\n\n"
+                "Сохрани. Возвращайся, когда надо.\n\n"
+                "И если захочешь — напиши, что отозвалось больше всего. Мне будет важно."
+            )
+        else:
+            doc_id = GUIDE_MEN_DOC
+            text = (
+                "Привет, рада видеть тебя в моём сообществе 💙\n\n"
+                "Отправляю обещанный подарок — гайд «10 фраз, которые стоит говорить себе». "
+                "Поддержка для тех дней, когда держать всё в себе больше нет сил.\n\n"
+                "Сохрани. Возвращайся, когда надо.\n\n"
+                "И если захочешь — напиши, что отозвалось больше всего. Мне будет важно."
+            )
+        vk.messages.send(
+            user_id=user_id,
+            message=text,
+            attachment=f"doc{doc_id}",
+            random_id=0
+        )
+        logger.info(f"Гайд ({guide_type}) отправлен {user_id}")
+    except Exception as e:
+        logger.error(f"Ошибка отправки гайда: {e}")
 
 def process_message(event):
     """Обработка входящего сообщения"""
@@ -600,22 +628,7 @@ def process_message(event):
         if text in ["назад", "вернуться", "предыдущий", "back"]:
             user_data = user_states.get(user_id, {})
             if user_data.get("state") == "taking_test":
-                current = user_data.get("current_question", 0)
-                answers = user_data.get("answers", [])
-
-                if current > 0 and len(answers) > 0:
-                    answers.pop()
-                    current -= 1
-
-                    user_states[user_id] = {
-                        "state": "taking_test",
-                        "test_id": user_data.get("test_id", "emotional"),
-                        "current_question": current,
-                        "answers": answers
-                    }
-
-                    send_message(user_id, "⬅️ Возвращаемся к предыдущему вопросу...\n\n")
-                    show_question(user_id)
+                ...
                 else:
                     send_message(user_id, "Это первый вопрос. Назад нельзя.")
             else:
