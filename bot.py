@@ -685,25 +685,25 @@ def process_message(event):
                     create_subscription_keyboard()
                 )
             return
-
         # Проверка подписки (кнопка)
         if text == "✅ проверить подписку":
             if check_subscription(user_id):
                 user_data = user_states.get(user_id, {})
                 test_id = user_data.get("test_id", "")
 
-                # Если пришёл за гайдом — отправляем гайд и ВЫХОДИМ
+                # Гайд для женщин
                 if test_id == "guide_women":
                     send_guide(user_id, "women")
                     user_states[user_id] = {"state": "idle"}
                     return
 
+                # Гайд для мужчин
                 if test_id == "guide_men":
                     send_guide(user_id, "men")
                     user_states[user_id] = {"state": "idle"}
                     return
 
-                # Иначе — тест (только если test_id реально тест)
+                # Реальный тест — запускаем
                 if test_id in TESTS:
                     test_data = TESTS[test_id]
                     send_message(
@@ -720,9 +720,11 @@ def process_message(event):
                         f"Нажмите кнопку ниже, чтобы начать тест."
                     )
                     send_message(user_id, welcome_text, create_start_keyboard())
-                else:
-                    send_message(user_id, "✅ Отлично! Вы подписаны!")
-                    user_states[user_id] = {"state": "idle"}
+                    return
+
+                # Ничего не подошло — просто благодарим
+                send_message(user_id, "✅ Отлично! Вы подписаны!")
+                user_states[user_id] = {"state": "idle"}
             else:
                 send_message(
                     user_id,
@@ -731,7 +733,6 @@ def process_message(event):
                     create_subscription_keyboard()
                 )
             return
-
         # Начало теста
         if text == "🚀 начать тест":
             user_data = user_states.get(user_id, {})
