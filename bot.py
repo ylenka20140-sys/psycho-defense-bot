@@ -570,15 +570,15 @@ def process_message(event):
         user_id = event.user_id
         text = event.text.lower().strip()
         logger.info(f"Получено сообщение от {user_id}: {text}")
-        
+
         # === НАВИГАЦИЯ ПО ТЕСТУ ===
-        
+
         # Стоп-слово — остановить тест
         if text in ["стоп", "stop", "отмена", "прекратить", "закончить", "выйти", "хватит"]:
             user_states[user_id] = {"state": "idle"}
             send_message(user_id, "⏹ Тест остановлен.")
             return
-        
+
         # Начать сначала
         if text in ["сначала", "заново", "перезапустить", "restart", "с начала"]:
             user_data = user_states.get(user_id, {})
@@ -595,25 +595,25 @@ def process_message(event):
             else:
                 send_message(user_id, "Сейчас нет активного теста.")
             return
-        
+
         # Вернуться к предыдущему вопросу
         if text in ["назад", "вернуться", "предыдущий", "back"]:
             user_data = user_states.get(user_id, {})
             if user_data.get("state") == "taking_test":
                 current = user_data.get("current_question", 0)
                 answers = user_data.get("answers", [])
-                
+
                 if current > 0 and len(answers) > 0:
                     answers.pop()
                     current -= 1
-                    
+
                     user_states[user_id] = {
                         "state": "taking_test",
                         "test_id": user_data.get("test_id", "emotional"),
                         "current_question": current,
                         "answers": answers
                     }
-                    
+
                     send_message(user_id, "⬅️ Возвращаемся к предыдущему вопросу...\n\n")
                     show_question(user_id)
                 else:
@@ -621,20 +621,47 @@ def process_message(event):
             else:
                 send_message(user_id, "Сейчас нет активного теста.")
             return
-        
+
         # === КОНЕЦ НАВИГАЦИИ ===
-        
+
+        # ===== ГАЙДЫ =====
+        if any(t in text for t in GUIDE_WOMEN_TRIGGERS):
+            if check_subscription(user_id):
+                send_guide(user_id, "women")
+            else:
+                user_states[user_id] = {"state": "waiting_subscription", "test_id": "guide_women"}
+                send_message(
+                    user_id,
+                    "Чтобы получить гайд, подпишись на сообщество 🤍\n\n"
+                    "Подпишись и нажми «Проверить подписку».",
+                    create_subscription_keyboard()
+                )
+            return
+
+        if any(t in text for t in GUIDE_MEN_TRIGGERS):
+            if check_subscription(user_id):
+                send_guide(user_id, "men")
+            else:
+                user_states[user_id] = {"state": "waiting_subscription", "test_id": "guide_men"}
+                send_message(
+                    user_id,
+                    "Чтобы получить гайд, подпишись на сообщество 💙\n\n"
+                    "Подпишись и нажми «Проверить подписку».",
+                    create_subscription_keyboard()
+                )
+            return
+
         # Ищем тест по триггеру
         test_id = find_test_by_trigger(text)
-        
+
         # Проверяем подписку
         is_subscribed = check_subscription(user_id)
-        
+
         if test_id:
             if is_subscribed:
                 test_data = TESTS[test_id]
                 user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
-                
+
                 welcome_text = (
                     f"👋 Здравствуйте!\n\n"
                     f"Это тест «{test_data['name']}»\n"
@@ -653,22 +680,34 @@ def process_message(event):
                     create_subscription_keyboard()
                 )
             return
-        
+
         # Проверка подписки (кнопка)
         if text == "✅ проверить подписку":
             if check_subscription(user_id):
                 user_data = user_states.get(user_id, {})
                 test_id = user_data.get("test_id", "emotional")
+
+                # Если пришёл за гайдом — отправляем гайд
+                if test_id == "guide_women":
+                    send_guide(user_id, "women")
+                    user_states[user_id] = {"state": "idle"}
+                    return
+
+                if test_id == "guide_men":
+                    send_guide(user_id, "men")
+                    user_states[user_id] = {"state": "idle"}
+                    return
+
+                # Иначе — тест, как раньше
                 test_data = TESTS[test_id]
-                
                 send_message(
                     user_id,
                     f"✅ Отлично! Вы подписаны!\n\n"
                     f"Запускаю тест «{test_data['name']}»..."
                 )
-                
+
                 user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
-                
+
                 welcome_text = (
                     f"Это тест «{test_data['name']}»\n"
                     f"{test_data['description']}\n\n"
@@ -684,7 +723,7 @@ def process_message(event):
                     create_subscription_keyboard()
                 )
             return
-        
+
         # Начало теста
         if text == "🚀 начать тест":
             user_data = user_states.get(user_id, {})
@@ -696,7 +735,7 @@ def process_message(event):
                 "answers": []
             }
             show_question(user_id)
-        
+
         elif text == "🔄 пройти тест снова":
             user_data = user_states.get(user_id, {})
             test_id = user_data.get("test_id", "emotional")
@@ -707,20 +746,20 @@ def process_message(event):
                 "answers": []
             }
             show_question(user_id)
-        
+
         elif user_id in user_states and user_states[user_id].get("state") == "taking_test":
             process_answer(user_id, text)
-        
+
         elif text in ["/admin", "админ", "статистика"] and user_id in ADMIN_IDS:
             show_stats(user_id)
-        
+
         else:
             send_message(
                 user_id,
                 "По всем вопросам пишите мне:\n"
                 "👉 https://vk.ru/tonker"
             )
-            
+
     except Exception as e:
         logger.error(f"Ошибка обработки сообщения: {e}")
 
