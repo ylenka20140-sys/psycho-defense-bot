@@ -705,7 +705,6 @@ def process_message(event):
                     f"✅ Отлично! Вы подписаны!\n\n"
                     f"Запускаю тест «{test_data['name']}»..."
                 )
-
                 user_states[user_id] = {"state": "waiting_start", "test_id": test_id}
 
                 welcome_text = (
