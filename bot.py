@@ -791,13 +791,6 @@ def process_message(event):
         elif text in ["/admin", "админ", "статистика"] and user_id in ADMIN_IDS:
             show_stats(user_id)
 
-        else:
-            send_message(
-                user_id,
-                "По всем вопросам пишите мне:\n"
-                "👉 https://vk.ru/tonker"
-            )
-
     except Exception as e:
         logger.error(f"Ошибка обработки сообщения: {e}")
 
